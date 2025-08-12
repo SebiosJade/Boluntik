@@ -4,7 +4,8 @@
     "name": "Admin",
     "email": "sebiosjhade31@gmail.com",
     "passwordHash": "$2a$10$8X2aMaU0eUnVzeBitejNSeubEQG1gG5Nb6xi956xpwaD1WlaXjitu",
-    "createdAt": "2025-08-12T08:43:45.492Z"
+    "createdAt": "2025-08-12T08:43:45.492Z",
+    "hasCompletedOnboarding": true
   },
   {
     "id": "b8cb53f4-e774-44ab-a22b-a9509ffd51aa",
@@ -20,6 +21,22 @@
     "email": "jovangocela75@gmail.com",
     "passwordHash": "$2a$10$w/QVIaQLOaQQglmCcNHD3.Pjs7W9AOXrOlYHy1KB/b2X3whb6emF6",
     "createdAt": "2025-08-12T09:33:06.084Z",
+    "hasCompletedOnboarding": true
+  },
+  {
+    "id": "cb02a120-bd48-4aa3-be55-d4d6a6c8adf2",
+    "name": "Christina",
+    "email": "christina@gmail.com",
+    "passwordHash": "$2a$10$dnvp2b2n615qmI90wnhRXeGfj0kQ7347XITp0dzrSvcxMtv9p2mGS",
+    "createdAt": "2025-08-12T13:08:57.332Z",
+    "hasCompletedOnboarding": true
+  },
+  {
+    "id": "404a4a05-d81d-4667-bc70-8a60a067e0eb",
+    "name": "Chino Paay",
+    "email": "chino@gmail.com",
+    "passwordHash": "$2a$10$WRmOGJpC2bGC6SS6Um5cWeVUr4.pJp1cJffh5aHN/inzkZVYvDbcq",
+    "createdAt": "2025-08-12T13:34:15.464Z",
     "hasCompletedOnboarding": true
   }
 ]

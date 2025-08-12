@@ -1,8 +1,26 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function BrowseOpportunitiesScreen() {
+  const router = useRouter();
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleProfilePress = () => {
+    setShowDropdown(!showDropdown);
+  };
+
+  const handleMyProfile = () => {
+    setShowDropdown(false);
+    router.push('/myprofile');
+  };
+
+  const handleLogout = () => {
+    setShowDropdown(false);
+    router.push('/login');
+    console.log('Logout pressed');
+  };
   const opportunities: Opportunity[] = [
     {
       id: '1',
@@ -76,8 +94,49 @@ export default function BrowseOpportunitiesScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.headerBar}>
-        <Text style={styles.brand}>VolunTech</Text>
-        <Ionicons name="menu" size={20} color="#111827" />
+        <View style={styles.headerLeft}>
+          <Image
+            source={require('../../assets/images/react-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+            accessible
+            accessibilityLabel="VOLUNTECH logo"
+          />
+          <Text style={styles.brand}>VOLUNTECH</Text>
+        </View>
+        <View style={styles.profileContainer}>
+          <TouchableOpacity
+            style={styles.notificationIcon}
+            accessibilityRole="button"
+            accessibilityLabel="View notifications"
+            onPress={() => {
+              console.log('Notifications pressed')
+              router.push('/notification')
+            }}
+          >
+            <Ionicons name="notifications-outline" size={32} color="#111827" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="View profile options"
+            onPress={handleProfilePress}
+          >
+            <Ionicons name="person-circle" size={32} color="#111827" />
+          </TouchableOpacity>
+          
+          {showDropdown && (
+            <View style={styles.dropdown}>
+              <TouchableOpacity style={styles.dropdownItem} onPress={handleMyProfile}>
+                <Ionicons name="person-outline" size={20} color="#374151" />
+                <Text style={styles.dropdownText}>My Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                <Text style={[styles.dropdownText, styles.logoutText]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -218,13 +277,60 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  brand: { fontSize: 14, fontWeight: '800', color: '#2563EB' },
-
+  
   scrollContent: { padding: 16, paddingBottom: 40 },
   headingWrap: { marginBottom: 12 },
   pageTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
   pageSubtitle: { marginTop: 6, fontSize: 12, color: '#6B7280' },
-
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brand: { fontSize: 12, letterSpacing: 1, color: '#0F172A', fontWeight: '700' },
+  logo: { width: 28, height: 28 },
+  profileContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationIcon: {
+    // Remove absolute positioning, let flexbox handle it
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1000,
+    minWidth: 150,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  logoutText: {
+    color: '#EF4444',
+  },
   searchInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',

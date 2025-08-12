@@ -1,15 +1,32 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeDashboardScreen() {
   const router = useRouter();
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleProfilePress = () => {
+    setShowDropdown(!showDropdown);
+  };
+
+  const handleMyProfile = () => {
+    setShowDropdown(false);
+    router.push('/myprofile');
+  };
+
+  const handleLogout = () => {
+    setShowDropdown(false);
+    router.push('/login');
+    console.log('Logout pressed');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.headerBar}>
         <View style={styles.headerLeft}>
-        <Image
+          <Image
             source={require('../../assets/images/react-logo.png')}
             style={styles.logo}
             resizeMode="contain"
@@ -18,9 +35,41 @@ export default function HomeDashboardScreen() {
           />
           <Text style={styles.brand}>VOLUNTECH</Text>
         </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open menu">
-          <Ionicons name="menu" size={22} color="#111827" />
-        </TouchableOpacity>
+        <View style={styles.profileContainer}>
+          <TouchableOpacity
+            style={styles.notificationIcon}
+            accessibilityRole="button"
+            accessibilityLabel="View notifications"
+            onPress={
+              () => {
+                console.log('Notifications pressed')
+                router.push('/notification')
+              } 
+            }
+          >
+            <Ionicons name="notifications-outline" size={32} color="#111827" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="View profile options"
+            onPress={handleProfilePress}
+          >
+            <Ionicons name="person-circle" size={32} color="#111827" />
+          </TouchableOpacity>
+          
+          {showDropdown && (
+            <View style={styles.dropdown}>
+              <TouchableOpacity style={styles.dropdownItem} onPress={handleMyProfile}>
+                <Ionicons name="person-outline" size={20} color="#374151" />
+                <Text style={styles.dropdownText}>My Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                <Text style={[styles.dropdownText, styles.logoutText]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -49,10 +98,12 @@ export default function HomeDashboardScreen() {
             icon={<MaterialCommunityIcons name="alert-outline" size={20} color="#EF4444" />}
             titleLine1="Emergency"
             titleLine2="Response"
+            onPress={() => router.push('/(tabs)/emergency')}
           />
           <DashboardCard
             icon={<Ionicons name="calendar-outline" size={20} color="#8B5CF6" />}
             titleLine1="My Calendar"
+            onPress={() => router.push('/(tabs)/calendar')}
           />
 
           {/* Row 3 - Metrics */}
@@ -92,7 +143,7 @@ function DashboardCard({ icon, titleLine1, titleLine2, onPress }: { icon: React.
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={styles.cardIcon}>{icon}</View>
-      <View style={styles.cardTextWrap}> 
+      <View style={styles.cardTextWrap}>
         <Text style={styles.cardText}>{titleLine1}</Text>
         {titleLine2 ? <Text style={styles.cardText}>{titleLine2}</Text> : null}
       </View>
@@ -130,7 +181,7 @@ function SectionCard({ title, actionText, onPressAction, children }: { title: st
 
 function UpcomingEventsSection() {
   return (
-    <SectionCard title="Upcoming Events" actionText="View Calendar" onPressAction={() => {}}>
+    <SectionCard title="Upcoming Events" actionText="View Calendar" onPressAction={() => { }}>
       <EventCard
         title="Beach Cleanup"
         org="Ocean Guardians"
@@ -175,7 +226,7 @@ function EventCard({ title, org, date, time, location }: { title: string; org: s
 
 function BadgesSection() {
   return (
-    <SectionCard title="Your Badges" actionText="View All" onPressAction={() => {}}>
+    <SectionCard title="Your Badges" actionText="View All" onPressAction={() => { }}>
       <View style={styles.badgeRow}>
         <BadgeItem icon={<Ionicons name="sparkles-outline" size={18} color="#F59E0B" />} title="First Timer" subtitle="Completed your first volunteer event" />
         <BadgeItem icon={<MaterialCommunityIcons name="hand-heart" size={18} color="#F59E0B" />} title="Helping Hand" subtitle={"Volunteered for\n10+ hours"} />
@@ -238,6 +289,48 @@ const styles = StyleSheet.create({
   },
   logo: { width: 28, height: 28 },
   brand: { fontSize: 12, letterSpacing: 1, color: '#0F172A', fontWeight: '700' },
+  profileContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationIcon: {
+    // Remove absolute positioning, let flexbox handle it
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1000,
+    minWidth: 150,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  logoutText: {
+    color: '#EF4444',
+  },
 
   scrollContent: {
     paddingHorizontal: 16,
