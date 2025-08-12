@@ -1,0 +1,25 @@
+[
+  {
+    "id": "761fd607-c7bc-49e5-94ef-bf47b13646dc",
+    "name": "Admin",
+    "email": "sebiosjhade31@gmail.com",
+    "passwordHash": "$2a$10$8X2aMaU0eUnVzeBitejNSeubEQG1gG5Nb6xi956xpwaD1WlaXjitu",
+    "createdAt": "2025-08-12T08:43:45.492Z"
+  },
+  {
+    "id": "b8cb53f4-e774-44ab-a22b-a9509ffd51aa",
+    "name": "Kissia",
+    "email": "mabanokissiamae@gmail.com",
+    "passwordHash": "$2a$10$7qZ6Vb4R6h8FPsRfsTpJgeTvgzZbtTc4deXdToaKCnTmZzHZe2kxW",
+    "createdAt": "2025-08-12T09:18:55.277Z",
+    "hasCompletedOnboarding": true
+  },
+  {
+    "id": "47104691-fb39-4356-ac45-0b9e82923b21",
+    "name": "Jovan",
+    "email": "jovangocela75@gmail.com",
+    "passwordHash": "$2a$10$w/QVIaQLOaQQglmCcNHD3.Pjs7W9AOXrOlYHy1KB/b2X3whb6emF6",
+    "createdAt": "2025-08-12T09:33:06.084Z",
+    "hasCompletedOnboarding": true
+  }
+]
