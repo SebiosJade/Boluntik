@@ -1,50 +1,151 @@
-# Welcome to your Expo app 👋
+# VolunTech - Volunteer Management Platform
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A comprehensive mobile application for managing volunteer activities, organizations, and emergency responses.
 
-## Get started
+## 🏗️ Project Structure
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+App/
+├── Frontend/               # React Native/Expo mobile app
+│   ├── app/               # App screens and navigation
+│   ├── components/        # Reusable UI components
+│   ├── contexts/          # React Context providers
+│   ├── hooks/             # Custom React hooks
+│   ├── constants/         # App constants and API config
+│   ├── assets/            # Images, fonts, and static files
+│   └── package.json       # Frontend dependencies
+├── Backend/                # Node.js/Express API server
+│   ├── server/            # Server source code
+│   ├── package.json       # Backend dependencies
+│   └── README.md          # Backend documentation
+└── README.md              # This file
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🚀 Tech Stack
 
-## Learn more
+### Frontend
+- **React Native** (v0.79.5) - Cross-platform mobile development
+- **React** (v19.0.0) - Latest React version
+- **TypeScript** (v5.8.3) - Type-safe JavaScript
+- **Expo** (v53.0.20) - React Native development platform
+- **Expo Router** (v5.1.4) - File-based routing system
 
-To learn more about developing your project with Expo, look at the following resources:
+### Backend
+- **Node.js** with ES Modules
+- **Express.js** (v4.19.2) - Web framework
+- **JWT** - JSON Web Token authentication
+- **bcryptjs** - Password hashing
+- **CORS** - Cross-Origin Resource Sharing
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🏃‍♂️ Getting Started
 
-## Join the community
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo CLI (`npm install -g @expo/cli`)
+- iOS Simulator (for iOS development)
+- Android Studio (for Android development)
 
-Join our community of developers creating universal apps.
+### 1. Clone and Setup
+```bash
+git clone <your-repo-url>
+cd App
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 2. Backend Setup
+```bash
+cd Backend
+npm install
+npm run dev
+```
+The backend server will start on port 4000.
+
+### 3. Frontend Setup
+```bash
+cd Frontend
+npm install
+npm start
+```
+
+### 4. Run on Device/Simulator
+- **iOS:** Press `i` in the terminal or scan QR code with Expo Go app
+- **Android:** Press `a` in the terminal or scan QR code with Expo Go app
+- **Web:** Press `w` in the terminal
+
+## 📱 App Features
+
+### User Roles
+- **Admin:** Platform management, analytics, user management
+- **Organization:** Event management, volunteer coordination, impact tracking
+- **Volunteer:** Event discovery, calendar management, emergency response
+
+### Key Features
+- **Authentication & Authorization** with role-based access
+- **File-based routing** with Expo Router
+- **Cross-platform support** (iOS, Android, Web)
+- **Modern UI components** with haptic feedback
+- **Real-time updates** and notifications
+- **Emergency response system**
+- **Crowdfunding integration**
+- **Virtual hub for remote volunteering**
+
+## 🔧 Development
+
+### Frontend Commands
+```bash
+cd Frontend
+npm start          # Start Expo development server
+npm run android    # Run on Android
+npm run ios        # Run on iOS
+npm run web        # Run on Web
+npm run lint       # Run ESLint
+```
+
+### Backend Commands
+```bash
+cd Backend
+npm start          # Start production server
+npm run dev        # Start development server (with nodemon)
+```
+
+## 🌐 API Configuration
+
+The frontend automatically detects the backend URL:
+- **Development:** Automatically finds local IP and connects to port 4000
+- **Production:** Set `EXPO_PUBLIC_API_URL` environment variable
+
+## 📊 Data Storage
+
+Currently using file-based JSON storage for development. The backend stores:
+- User accounts and authentication
+- Role-based permissions
+- Onboarding status
+
+## 🚧 Future Roadmap
+
+- [ ] Database integration (MongoDB/PostgreSQL)
+- [ ] Real-time notifications
+- [ ] Push notifications
+- [ ] Offline support
+- [ ] Advanced analytics
+- [ ] Payment integration
+- [ ] Social features
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions:
+- Check the individual README files in Frontend/ and Backend/
+- Review the API documentation
+- Open an issue in the repository

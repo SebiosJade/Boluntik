@@ -1,0 +1,30 @@
+[
+  {
+    "id": "d5084dea-cfa2-4df5-90e5-7d7df0bbdd8b",
+    "name": "Admin",
+    "email": "admin@gmail.com",
+    "passwordHash": "$2a$10$N2Bpl2Dgl5CsFnMAy3wtNOClHXp1lrgjf69MMRiddqzNRa1.y.NvK",
+    "createdAt": "2025-09-05T05:01:10.736Z",
+    "hasCompletedOnboarding": true,
+    "role": "admin"
+  },
+  {
+    "id": "784e4eef-bc9c-4a47-bf48-7961390b3273",
+    "name": "Org",
+    "email": "org@gmail.com",
+    "passwordHash": "$2a$10$YRpD0Px6Z6M7lq8WW9gzgO2ep/59AuhhK2OG6BhSaTL1KcXQncyQy",
+    "createdAt": "2025-09-05T05:23:27.973Z",
+    "hasCompletedOnboarding": false,
+    "role": "organization"
+  },
+  {
+    "id": "af3d6eb1-aee2-420c-a186-e0ac60b8c59e",
+    "name": "Chino Paay",
+    "email": "chino@gmail.com",
+    "passwordHash": "$2a$10$SKtPU6xKaiLeTOfZiBgQoO4EAjheqSvhoCIMh4TtdhYiQndn6wKIK",
+    "createdAt": "2025-09-05T11:51:40.917Z",
+    "hasCompletedOnboarding": true,
+    "role": "volunteer",
+    "passwordChangedAt": "2025-09-05T11:53:32.960Z"
+  }
+]
