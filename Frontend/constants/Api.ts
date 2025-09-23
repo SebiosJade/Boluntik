@@ -61,5 +61,9 @@ export const API = {
     create: `${API_BASE_URL}/api/events`,
     update: (id: string) => `${API_BASE_URL}/api/events/${id}`,
     delete: (id: string) => `${API_BASE_URL}/api/events/${id}`,
+    join: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/join`,
+    unjoin: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/unjoin`,
+    getUserJoined: (userId: string) => `${API_BASE_URL}/api/events/user/${userId}/joined`,
+    checkParticipation: (eventId: string, userId: string) => `${API_BASE_URL}/api/events/${eventId}/participation/${userId}`,
   },
 };

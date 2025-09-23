@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
+import { EditProfileModal } from '../components/EditProfileModal';
 import { API } from '../constants/Api';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfileEdit } from '../hooks/useProfileEdit';
-import { EditProfileModal } from '../components/EditProfileModal';
-import { uploadAvatar, deleteAvatar } from '../services/avatarService';
+import { deleteAvatar, uploadAvatar } from '../services/avatarService';
+import { Event, eventService } from '../services/eventService';
 
 // Constants
 const BADGES = [
@@ -97,10 +98,355 @@ export default function MyProfileScreen() {
   // Delete account state
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Events state
+  const [completedEvents, setCompletedEvents] = useState<Event[]>([]);
+  const [totalEvents, setTotalEvents] = useState<Event[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<number[]>([]);
+  const [totalHours, setTotalHours] = useState<number>(0);
+  const [organizationsHelped, setOrganizationsHelped] = useState<number>(0);
+  const [volunteersHelped, setVolunteersHelped] = useState<number>(0);
+  const [livesImpacted, setLivesImpacted] = useState<number>(0);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+
   // Fetch user profile data on component mount
   useEffect(() => {
     fetchUserProfile();
+    loadCompletedEvents();
   }, []);
+
+  // Load completed events based on user role
+  const loadCompletedEvents = async () => {
+    if (!user?.id) return;
+    
+    setIsLoadingEvents(true);
+    try {
+      let events: Event[] = [];
+      
+      if (user.role === 'organization') {
+        // For organizers: get ALL events they created (both completed and upcoming)
+        events = await eventService.getEventsByOrganization(user.id);
+        setTotalEvents(events); // Store all events for metrics
+      } else {
+        // For volunteers: get events they joined that are completed
+        // Note: This would need a new API endpoint for volunteer events
+        // For now, we'll use all events and filter by status
+        events = await eventService.getAllEvents();
+      }
+      
+      // Filter for completed events (status === 'Completed' or date is in the past)
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      const completed = events.filter(event => {
+        // Check if status is 'Completed' or date is in the past
+        if (event.status === 'Completed') return true;
+        
+        // Parse MM/DD/YYYY format
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        eventDate.setHours(0, 0, 0, 0);
+        
+        return eventDate < now;
+      });
+      
+      // Sort by date (most recent first)
+      completed.sort((a, b) => {
+        const [monthA, dayA, yearA] = a.date.split('/').map(Number);
+        const [monthB, dayB, yearB] = b.date.split('/').map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      setCompletedEvents(completed);
+      
+      // Calculate monthly statistics, total hours, organizations helped, volunteers helped, and lives impacted
+      calculateMonthlyStats(completed);
+      calculateTotalHours(completed);
+      calculateOrganizationsHelped(completed);
+      calculateVolunteersHelped(completed);
+      calculateLivesImpacted(completed);
+    } catch (error) {
+      console.error('Failed to load completed events:', error);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  // Calculate monthly statistics for the chart
+  const calculateMonthlyStats = (events: Event[]) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const monthlyCounts = new Array(6).fill(0); // Last 6 months
+    
+    events.forEach(event => {
+      try {
+        // Parse MM/DD/YYYY format
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        
+        // Only count events from current year
+        if (eventDate.getFullYear() === currentYear) {
+          const eventMonth = eventDate.getMonth();
+          const currentMonth = currentDate.getMonth();
+          
+          // Calculate months ago (0 = current month, 1 = last month, etc.)
+          let monthsAgo = currentMonth - eventMonth;
+          if (monthsAgo < 0) monthsAgo += 12; // Handle year rollover
+          
+          // Only include last 6 months
+          if (monthsAgo < 6) {
+            monthlyCounts[monthsAgo]++;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing event date:', event.date);
+      }
+    });
+    
+    // Reverse array so most recent month is last (for chart display)
+    setMonthlyStats(monthlyCounts.reverse());
+  };
+
+  // Calculate total hours from completed events
+  const calculateTotalHours = (events: Event[]) => {
+    let totalHours = 0;
+    
+    events.forEach(event => {
+      try {
+        // Parse time format (e.g., "4:43 PM" or "4:43 PM - 6:43 PM")
+        const startTime = event.time;
+        const endTime = event.endTime;
+        
+        if (startTime && endTime) {
+          const startDate = parseTimeString(startTime);
+          const endDate = parseTimeString(endTime);
+          
+          if (startDate && endDate) {
+            // Calculate difference in milliseconds
+            const diffMs = endDate.getTime() - startDate.getTime();
+            
+            // Convert to hours
+            const diffHours = diffMs / (1000 * 60 * 60);
+            
+            // Only add positive hours (end time after start time)
+            if (diffHours > 0) {
+              totalHours += diffHours;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error calculating hours for event:', event.title, error);
+      }
+    });
+    
+    setTotalHours(Math.round(totalHours * 10) / 10); // Round to 1 decimal place
+  };
+
+  // Calculate unique organizations helped from completed events
+  const calculateOrganizationsHelped = (events: Event[]) => {
+    const uniqueOrganizations = new Set<string>();
+    
+    events.forEach(event => {
+      // Use organizationName if available, otherwise fall back to org
+      const orgName = event.organizationName || event.org;
+      if (orgName && orgName.trim()) {
+        uniqueOrganizations.add(orgName.trim());
+      }
+    });
+    
+    setOrganizationsHelped(uniqueOrganizations.size);
+  };
+
+  // Calculate total volunteers who actually joined completed events
+  const calculateVolunteersHelped = (events: Event[]) => {
+    let totalVolunteers = 0;
+    
+    events.forEach(event => {
+      try {
+        // Check if event has actualParticipants field (actual volunteers who joined)
+        if (event.actualParticipants) {
+          const actualParticipants = parseInt(event.actualParticipants);
+          if (!isNaN(actualParticipants) && actualParticipants > 0) {
+            totalVolunteers += actualParticipants;
+          }
+        } else {
+          // Fallback: estimate based on maxParticipants (assume 70% attendance rate)
+          const maxParticipants = parseInt(event.maxParticipants);
+          if (!isNaN(maxParticipants) && maxParticipants > 0) {
+            const estimatedParticipants = Math.round(maxParticipants * 0.7);
+            totalVolunteers += estimatedParticipants;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing participants for event:', event.title, error);
+      }
+    });
+    
+    setVolunteersHelped(totalVolunteers);
+  };
+
+  // Calculate lives impacted based on event type and volunteers
+  const calculateLivesImpacted = (events: Event[]) => {
+    let totalLivesImpacted = 0;
+    
+    events.forEach(event => {
+      try {
+        // Get actual participants (or estimated)
+        let participants = 0;
+        if (event.actualParticipants) {
+          participants = parseInt(event.actualParticipants);
+        } else {
+          const maxParticipants = parseInt(event.maxParticipants);
+          if (!isNaN(maxParticipants) && maxParticipants > 0) {
+            participants = Math.round(maxParticipants * 0.7); // 70% attendance
+          }
+        }
+        
+        if (participants > 0) {
+          // Calculate impact multiplier based on event cause/type
+          const impactMultiplier = getImpactMultiplier(event.cause, event.eventType);
+          const eventImpact = participants * impactMultiplier;
+          totalLivesImpacted += eventImpact;
+        }
+      } catch (error) {
+        console.error('Error calculating lives impacted for event:', event.title, error);
+      }
+    });
+    
+    setLivesImpacted(Math.round(totalLivesImpacted));
+  };
+
+  // Get impact multiplier based on event cause and type
+  const getImpactMultiplier = (cause: string, eventType: string) => {
+    const causeLower = cause?.toLowerCase() || '';
+    const typeLower = eventType?.toLowerCase() || '';
+    
+    // High impact events (direct service to many people)
+    if (causeLower.includes('food') || causeLower.includes('hunger') || causeLower.includes('meal')) {
+      return 5; // Each volunteer can serve 5 people
+    }
+    if (causeLower.includes('education') || causeLower.includes('tutor') || causeLower.includes('school')) {
+      return 3; // Each volunteer can help 3 students
+    }
+    if (causeLower.includes('health') || causeLower.includes('medical') || causeLower.includes('care')) {
+      return 4; // Each volunteer can help 4 patients
+    }
+    
+    // Medium impact events
+    if (causeLower.includes('environment') || causeLower.includes('cleanup') || causeLower.includes('tree')) {
+      return 2; // Each volunteer impacts 2 people's environment
+    }
+    if (causeLower.includes('community') || causeLower.includes('social')) {
+      return 2; // Each volunteer helps 2 community members
+    }
+    
+    // Disaster relief and emergency
+    if (causeLower.includes('disaster') || causeLower.includes('emergency') || causeLower.includes('relief')) {
+      return 6; // Each volunteer can help 6 people in emergencies
+    }
+    
+    // Default multiplier
+    return 2; // Each volunteer impacts 2 lives on average
+  };
+
+  // Helper function to parse time string (e.g., "4:43 PM")
+  const parseTimeString = (timeStr: string) => {
+    try {
+      // Remove any extra spaces and convert to lowercase for easier parsing
+      const cleanTime = timeStr.trim().toLowerCase();
+      
+      // Check if it's 12-hour format with AM/PM
+      const amPmMatch = cleanTime.match(/(\d{1,2}):(\d{2})\s*(am|pm)/);
+      if (amPmMatch) {
+        let hours = parseInt(amPmMatch[1]);
+        const minutes = parseInt(amPmMatch[2]);
+        const amPm = amPmMatch[3];
+        
+        // Convert to 24-hour format
+        if (amPm === 'pm' && hours !== 12) {
+          hours += 12;
+        } else if (amPm === 'am' && hours === 12) {
+          hours = 0;
+        }
+        
+        // Create a date object for today with the parsed time
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+      }
+      
+      // Check if it's 24-hour format (e.g., "16:43")
+      const hour24Match = cleanTime.match(/(\d{1,2}):(\d{2})/);
+      if (hour24Match) {
+        const hours = parseInt(hour24Match[1]);
+        const minutes = parseInt(hour24Match[2]);
+        
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error parsing time string:', timeStr, error);
+      return null;
+    }
+  };
+
+  // Helper function to get icon based on event cause
+  const getEventIcon = (cause: string) => {
+    const causeLower = cause?.toLowerCase() || '';
+    if (causeLower.includes('environment') || causeLower.includes('cleanup') || causeLower.includes('tree')) {
+      return 'leaf-outline';
+    } else if (causeLower.includes('food') || causeLower.includes('hunger') || causeLower.includes('meal')) {
+      return 'restaurant-outline';
+    } else if (causeLower.includes('education') || causeLower.includes('tutor') || causeLower.includes('school')) {
+      return 'school-outline';
+    } else if (causeLower.includes('health') || causeLower.includes('medical') || causeLower.includes('care')) {
+      return 'medical-outline';
+    } else if (causeLower.includes('community') || causeLower.includes('social')) {
+      return 'people-outline';
+    } else if (causeLower.includes('disaster') || causeLower.includes('emergency') || causeLower.includes('relief')) {
+      return 'warning-outline';
+    } else {
+      return 'calendar-outline';
+    }
+  };
+
+  // Helper function to format date for display
+  const formatDateForDisplay = (dateString: string) => {
+    try {
+      const [month, day, year] = dateString.split('/').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Helper function to get month names for the last 6 months
+  const getMonthNames = () => {
+    const currentDate = new Date();
+    const months = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+    }
+    
+    return months;
+  };
+
+  // Helper function to calculate bar height based on max value
+  const getBarHeight = (value: number, maxValue: number) => {
+    if (maxValue === 0) return 10; // Minimum height when no data
+    return Math.max(10, (value / maxValue) * 100); // Scale to 100px max
+  };
 
   const fetchUserProfile = async () => {
     if (!token) {
@@ -698,72 +1044,146 @@ export default function MyProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Badges Earned</Text>
           <View style={styles.badgesGrid}>
-            {BADGES.map((badge) => (
-              <View key={badge.id} style={styles.badgeCard}>
-                <View style={[styles.badgeIcon, { backgroundColor: badge.color + '20' }]}>
-                  <Ionicons name={badge.icon as any} size={24} color={badge.color} />
+            {(() => {
+              // Calculate badge achievements based on real data
+              const hasFirstTimer = completedEvents.length >= 1;
+              const hasHelpingHand = totalHours >= 10;
+              const hasCommunityHero = organizationsHelped >= 5;
+              const hasLongTermVolunteer = completedEvents.length >= 10;
+              const hasEmergencyReady = completedEvents.some(event => 
+                event.cause?.toLowerCase().includes('emergency') || 
+                event.cause?.toLowerCase().includes('disaster') ||
+                event.cause?.toLowerCase().includes('relief')
+              );
+              const hasTeamPlayer = completedEvents.length >= 5;
+
+              const dynamicBadges = [
+                {
+                  id: 1,
+                  name: 'First Timer',
+                  icon: 'sparkles',
+                  color: hasFirstTimer ? '#F59E0B' : '#9CA3AF',
+                  earned: hasFirstTimer,
+                  description: hasFirstTimer ? 'Completed your first volunteer event' : 'Complete your first event'
+                },
+                {
+                  id: 2,
+                  name: 'Helping Hand',
+                  icon: 'hand-heart',
+                  color: hasHelpingHand ? '#F59E0B' : '#9CA3AF',
+                  earned: hasHelpingHand,
+                  description: hasHelpingHand ? `Volunteered for ${totalHours}+ hours` : 'Volunteer for 10+ hours'
+                },
+                {
+                  id: 3,
+                  name: 'Community Hero',
+                  icon: 'people',
+                  color: hasCommunityHero ? '#3B82F6' : '#9CA3AF',
+                  earned: hasCommunityHero,
+                  description: hasCommunityHero ? `Supported ${organizationsHelped}+ organizations` : 'Support 5+ organizations'
+                },
+                {
+                  id: 4,
+                  name: 'Long-term Volunteer',
+                  icon: 'time',
+                  color: hasLongTermVolunteer ? '#10B981' : '#9CA3AF',
+                  earned: hasLongTermVolunteer,
+                  description: hasLongTermVolunteer ? `Completed ${completedEvents.length}+ events` : 'Complete 10+ events'
+                },
+                {
+                  id: 5,
+                  name: 'Emergency Ready',
+                  icon: 'warning',
+                  color: hasEmergencyReady ? '#EF4444' : '#9CA3AF',
+                  earned: hasEmergencyReady,
+                  description: hasEmergencyReady ? 'Helped in emergency/disaster relief' : 'Help in emergency events'
+                },
+                {
+                  id: 6,
+                  name: 'Team Player',
+                  icon: 'person-add',
+                  color: hasTeamPlayer ? '#06B6D4' : '#9CA3AF',
+                  earned: hasTeamPlayer,
+                  description: hasTeamPlayer ? `Completed ${completedEvents.length}+ events` : 'Complete 5+ events'
+                }
+              ];
+
+              return dynamicBadges.map((badge) => (
+                <View key={badge.id} style={[styles.badgeCard, !badge.earned && styles.badgeCardLocked]}>
+                  <View style={[styles.badgeIcon, { backgroundColor: badge.color + '20' }]}>
+                    <Ionicons name={badge.icon as any} size={24} color={badge.color} />
+                  </View>
+                  <Text style={[styles.badgeName, !badge.earned && styles.badgeNameLocked]}>{badge.name}</Text>
+                  <Text style={[styles.badgeDescription, !badge.earned && styles.badgeDescriptionLocked]}>
+                    {badge.description}
+                  </Text>
                 </View>
-                <Text style={styles.badgeName}>{badge.name}</Text>
-              </View>
-            ))}
+              ));
+            })()}
           </View>
         </View>
 
         {/* Volunteer Impact Dashboard */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Volunteer Impact</Text>
+          <Text style={styles.sectionTitle}>
+            {user?.role === 'organization' ? 'Organization Impact' : 'Your Volunteer Impact'}
+          </Text>
           <View style={styles.impactDashboard}>
             {/* Bar Chart Section */}
             <View style={styles.chartContainer}>
-              <View style={styles.chart}>
-                <View style={styles.chartBars}>
-                  <View style={[styles.bar, { height: 25 }]}>
-                    <Text style={styles.barValue}>5</Text>
+              {isLoadingEvents ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Loading chart data...</Text>
+                </View>
+              ) : (
+                <View style={styles.chart}>
+                  <View style={styles.chartBars}>
+                    {monthlyStats.map((value, index) => {
+                      const maxValue = Math.max(...monthlyStats, 1); // Ensure at least 1 to avoid division by zero
+                      const height = getBarHeight(value, maxValue);
+                      return (
+                        <View key={index} style={[styles.bar, { height }]}>
+                          <Text style={styles.barValue}>{value}</Text>
+                        </View>
+                      );
+                    })}
                   </View>
-                  <View style={[styles.bar, { height: 40 }]}>
-                    <Text style={styles.barValue}>8</Text>
-                  </View>
-                  <View style={[styles.bar, { height: 60 }]}>
-                    <Text style={styles.barValue}>12</Text>
-                  </View>
-                  <View style={[styles.bar, { height: 50 }]}>
-                    <Text style={styles.barValue}>10</Text>
-                  </View>
-                  <View style={[styles.bar, { height: 75 }]}>
-                    <Text style={styles.barValue}>15</Text>
-                  </View>
-                  <View style={[styles.bar, { height: 95 }]}>
-                    <Text style={styles.barValue}>19</Text>
+                  <View style={styles.chartLabels}>
+                    {getMonthNames().map((month, index) => (
+                      <Text key={index} style={styles.chartLabel}>{month}</Text>
+                    ))}
                   </View>
                 </View>
-                <View style={styles.chartLabels}>
-                  <Text style={styles.chartLabel}>Jan</Text>
-                  <Text style={styles.chartLabel}>Feb</Text>
-                  <Text style={styles.chartLabel}>Mar</Text>
-                  <Text style={styles.chartLabel}>Apr</Text>
-                  <Text style={styles.chartLabel}>May</Text>
-                  <Text style={styles.chartLabel}>Jun</Text>
-                </View>
-              </View>
+              )}
             </View>
 
             {/* Metrics Grid */}
             <View style={styles.metricsGrid}>
               <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>Hours Volunteered</Text>
-                <Text style={styles.metricValue}>70</Text>
+                <Text style={styles.metricLabel}>
+                  {user?.role === 'organization' ? 'Hours Organized' : 'Hours Volunteered'}
+                </Text>
+                <Text style={styles.metricValue}>{totalHours}</Text>
               </View>
               <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>Events Attended</Text>
-                <Text style={styles.metricValue}>12</Text>
+                <Text style={styles.metricLabel}>
+                  {user?.role === 'organization' ? 'Events Created' : 'Events Attended'}
+                </Text>
+                <Text style={styles.metricValue}>
+                  {user?.role === 'organization' ? totalEvents.length : completedEvents.length}
+                </Text>
               </View>
               <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>Organizations Helped</Text>
-                <Text style={styles.metricValue}>5</Text>
+                <Text style={styles.metricLabel}>
+                  {user?.role === 'organization' ? 'Volunteers Joined' : 'Organizations Helped'}
+                </Text>
+                <Text style={styles.metricValue}>
+                  {user?.role === 'organization' ? volunteersHelped : organizationsHelped}
+                </Text>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>Lives Impacted</Text>
-                <Text style={styles.metricValue}>250+</Text>
+                <Text style={styles.metricValue}>{livesImpacted}+</Text>
               </View>
             </View>
           </View>
@@ -773,46 +1193,34 @@ export default function MyProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Activity History</Text>
           <View style={styles.activityList}>
-            <ActivityItem
-              icon="calendar-outline"
-              title="Beach Cleanup Event"
-              organization="Ocean Guardians"
-              date="June 15, 2024"
-              time="9:00 AM - 12:00 PM"
-              status="completed"
-            />
-            <ActivityItem
-              icon="restaurant-outline"
-              title="Food Bank Volunteer"
-              organization="Community Pantry"
-              date="June 12, 2024"
-              time="2:00 PM - 5:00 PM"
-              status="completed"
-            />
-            <ActivityItem
-              icon="school-outline"
-              title="Tutoring Session"
-              organization="Education First"
-              date="June 10, 2024"
-              time="3:00 PM - 4:30 PM"
-              status="completed"
-            />
-            <ActivityItem
-              icon="medical-outline"
-              title="Health Check-up Drive"
-              organization="Health Plus"
-              date="June 8, 2024"
-              time="10:00 AM - 2:00 PM"
-              status="completed"
-            />
-            <ActivityItem
-              icon="leaf-outline"
-              title="Tree Planting Initiative"
-              organization="Green Earth"
-              date="June 5, 2024"
-              time="8:00 AM - 11:00 AM"
-              status="completed"
-            />
+            {isLoadingEvents ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading events...</Text>
+              </View>
+            ) : completedEvents.length > 0 ? (
+              completedEvents.map((event, index) => (
+                <ActivityItem
+                  key={event.id || index}
+                  icon={getEventIcon(event.cause)}
+                  title={event.title}
+                  organization={event.organizationName || event.org}
+                  date={formatDateForDisplay(event.date)}
+                  time={`${event.time} - ${event.endTime}`}
+                  status="completed"
+                />
+              ))
+            ) : (
+              <View style={styles.noEventsContainer}>
+                <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+                <Text style={styles.noEventsTitle}>No Completed Events</Text>
+                <Text style={styles.noEventsSubtext}>
+                  {user?.role === 'organization' 
+                    ? 'You haven\'t completed any events yet' 
+                    : 'You haven\'t attended any events yet'
+                  }
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -1266,6 +1674,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+  badgeNameLocked: {
+    color: '#9CA3AF',
+  },
+  badgeDescription: {
+    fontSize: 10,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 14,
+  },
+  badgeDescriptionLocked: {
+    color: '#D1D5DB',
+  },
+  badgeCardLocked: {
+    opacity: 0.7,
+  },
 
   // Volunteer Impact Dashboard Styles
   impactDashboard: {
@@ -1580,5 +2004,35 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Loading and No Events Styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  noEventsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  noEventsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noEventsSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

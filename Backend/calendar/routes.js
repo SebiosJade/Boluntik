@@ -6,7 +6,11 @@ const {
   getEventById,
   createEvent,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  joinEvent,
+  unjoinEvent,
+  getUserJoinedEvents,
+  checkUserParticipation
 } = require('./controllers/eventController');
 
 const router = express.Router();
@@ -31,5 +35,17 @@ router.put('/:id', updateEvent);
 
 // Delete event
 router.delete('/:id', deleteEvent);
+
+// Join an event
+router.post('/:eventId/join', joinEvent);
+
+// Unjoin an event
+router.post('/:eventId/unjoin', unjoinEvent);
+
+// Get user's joined events
+router.get('/user/:userId/joined', getUserJoinedEvents);
+
+// Check if user has joined an event
+router.get('/:eventId/participation/:userId', checkUserParticipation);
 
 module.exports = router;

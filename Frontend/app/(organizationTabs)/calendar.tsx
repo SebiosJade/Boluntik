@@ -1072,7 +1072,7 @@ export default function CalendarScreen() {
       </Animated.View>
 
       {/* Header */}
-      <ProfileDropdown />
+          <ProfileDropdown />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Main Content Header */}

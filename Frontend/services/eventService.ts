@@ -9,6 +9,7 @@ export interface Event {
   endTime: string;
   location: string;
   maxParticipants: string;
+  actualParticipants?: string; // Optional field for actual volunteers who joined
   eventType: string;
   difficulty: string;
   cause: string;
@@ -117,6 +118,32 @@ class EventService {
     return this.makeRequest(API.events.delete(id), {
       method: 'DELETE',
     });
+  }
+
+  // Join an event
+  async joinEvent(eventId: string, userInfo: { userId: string; userName: string; userEmail: string }): Promise<any> {
+    return this.makeRequest(API.events.join(eventId), {
+      method: 'POST',
+      body: JSON.stringify(userInfo),
+    });
+  }
+
+  // Unjoin an event
+  async unjoinEvent(eventId: string, userId: string): Promise<any> {
+    return this.makeRequest(API.events.unjoin(eventId), {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+  }
+
+  // Get user's joined events
+  async getUserJoinedEvents(userId: string): Promise<Event[]> {
+    return this.makeRequest(API.events.getUserJoined(userId));
+  }
+
+  // Check if user has joined an event
+  async checkUserParticipation(eventId: string, userId: string): Promise<{ hasJoined: boolean; joinedAt: string | null }> {
+    return this.makeRequest(API.events.checkParticipation(eventId, userId));
   }
 }
 

@@ -1,10 +1,12 @@
+import ProfileIcon from '@/components/ProfileIcon';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import ProfileIcon from '@/components/ProfileIcon';
+import { useAuth } from '../../contexts/AuthContext';
+import { Event, eventService } from '../../services/eventService';
 
 const { width } = Dimensions.get('window');
 const sidebarWidth = width * 0.8;
@@ -61,14 +63,180 @@ const pulseAnimation = () => {
 
 export default function HomeDashboardScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const sidebarSlideAnim = useRef(new Animated.Value(-sidebarWidth)).current;
+  const [joinedEvents, setJoinedEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [completedEvents, setCompletedEvents] = useState<Event[]>([]);
+  const [totalHours, setTotalHours] = useState(0);
+  const [uniqueOrganizations, setUniqueOrganizations] = useState(0);
+  const [hoursThisMonth, setHoursThisMonth] = useState(0);
+  const [eventsThisMonth, setEventsThisMonth] = useState(0);
 
   // Start animations when component mounts
   useEffect(() => {
     entranceAnimation();
     pulseAnimation();
+    loadJoinedEvents();
   }, []);
+
+  // Load user's joined events and calculate badge metrics
+  const loadJoinedEvents = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setIsLoading(true);
+      const events = await eventService.getUserJoinedEvents(user.id);
+      
+      // Filter for upcoming events only
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      const upcomingJoinedEvents = events.filter(event => {
+        // Parse MM/DD/YYYY format
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        eventDate.setHours(0, 0, 0, 0);
+        
+        return eventDate >= now && event.status !== 'Completed';
+      });
+      
+      // Sort by date (earliest first) and take only the first 2
+      upcomingJoinedEvents.sort((a, b) => {
+        const [monthA, dayA, yearA] = a.date.split('/').map(Number);
+        const [monthB, dayB, yearB] = b.date.split('/').map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setJoinedEvents(upcomingJoinedEvents.slice(0, 2)); // Show only first 2 events
+      
+      // Calculate badge metrics from completed events
+      const completed = events.filter(event => {
+        if (event.status === 'Completed') return true;
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate < now;
+      });
+      
+      setCompletedEvents(completed);
+      
+      // Calculate total hours
+      let totalHours = 0;
+      completed.forEach(event => {
+        try {
+          const startTime = event.time;
+          const endTime = event.endTime;
+          if (startTime && endTime) {
+            const startDate = parseTimeString(startTime);
+            const endDate = parseTimeString(endTime);
+            if (startDate && endDate) {
+              const diffMs = endDate.getTime() - startDate.getTime();
+              const diffHours = diffMs / (1000 * 60 * 60);
+              if (diffHours > 0) {
+                totalHours += diffHours;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error calculating hours for event:', event.title, error);
+        }
+      });
+      setTotalHours(Math.round(totalHours * 10) / 10);
+      
+      // Calculate unique organizations
+      const uniqueOrgs = new Set<string>();
+      completed.forEach(event => {
+        const orgName = event.organizationName || event.org;
+        if (orgName && orgName.trim()) {
+          uniqueOrgs.add(orgName.trim());
+        }
+      });
+      setUniqueOrganizations(uniqueOrgs.size);
+      
+      // Calculate monthly metrics
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      
+      let monthlyHours = 0;
+      let monthlyEvents = 0;
+      
+      completed.forEach(event => {
+        try {
+          // Parse event date
+          const [month, day, year] = event.date.split('/').map(Number);
+          const eventDate = new Date(year, month - 1, day);
+          
+          // Check if event is from current month
+          if (eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear) {
+            monthlyEvents++;
+            
+            // Calculate hours for this event
+            const startTime = event.time;
+            const endTime = event.endTime;
+            if (startTime && endTime) {
+              const startDate = parseTimeString(startTime);
+              const endDate = parseTimeString(endTime);
+              if (startDate && endDate) {
+                const diffMs = endDate.getTime() - startDate.getTime();
+                const diffHours = diffMs / (1000 * 60 * 60);
+                if (diffHours > 0) {
+                  monthlyHours += diffHours;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error calculating monthly metrics for event:', event.title, error);
+        }
+      });
+      
+      setHoursThisMonth(Math.round(monthlyHours * 10) / 10);
+      setEventsThisMonth(monthlyEvents);
+      
+    } catch (error) {
+      console.error('Failed to load joined events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to parse time strings
+  const parseTimeString = (timeStr: string) => {
+    try {
+      const cleanTime = timeStr.trim().toLowerCase();
+      const amPmMatch = cleanTime.match(/(\d{1,2}):(\d{2})\s*(am|pm)/);
+      if (amPmMatch) {
+        let hours = parseInt(amPmMatch[1]);
+        const minutes = parseInt(amPmMatch[2]);
+        const amPm = amPmMatch[3];
+        if (amPm === 'pm' && hours !== 12) {
+          hours += 12;
+        } else if (amPm === 'am' && hours === 12) {
+          hours = 0;
+        }
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+      }
+      const hour24Match = cleanTime.match(/(\d{1,2}):(\d{2})/);
+      if (hour24Match) {
+        const hours = parseInt(hour24Match[1]);
+        const minutes = parseInt(hour24Match[2]);
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing time string:', timeStr, error);
+      return null;
+    }
+  };
 
   const toggleMenu = () => {
     const toValue = isMenuOpen ? -sidebarWidth : 0;
@@ -207,12 +375,20 @@ export default function HomeDashboardScreen() {
             }
           ]}
         >
-          <MetricCard label="Hours This Month" value="24" />
-          <MetricCard label="Events Attended" value="8" />
+          <MetricCard label="Hours This Month" value={hoursThisMonth.toString()} />
+          <MetricCard label="Events Attended" value={eventsThisMonth.toString()} />
         </Animated.View>
 
-        <UpcomingEventsSection />
-        <BadgesSection />
+        <UpcomingEventsSection 
+          events={joinedEvents}
+          isLoading={isLoading}
+          onViewCalendar={() => router.push('/(volunteerTabs)/calendar')}
+        />
+        <BadgesSection 
+          completedEvents={completedEvents}
+          totalHours={totalHours}
+          uniqueOrganizations={uniqueOrganizations}
+        />
         <ImpactHighlightsSection />
       </ScrollView>
     </SafeAreaView>
@@ -277,23 +453,37 @@ function SectionCard({ title, actionText, onPressAction, children }: { title: st
   );
 }
 
-function UpcomingEventsSection() {
+function UpcomingEventsSection({ 
+  events, 
+  isLoading, 
+  onViewCalendar 
+}: { 
+  events: Event[]; 
+  isLoading: boolean; 
+  onViewCalendar: () => void; 
+}) {
   return (
-    <SectionCard title="Upcoming Events" actionText="View Calendar" onPressAction={() => { }}>
-      <EventCard
-        title="Beach Cleanup"
-        org="Ocean Guardians"
-        date="Jun 15, 2023"
-        time="9:00 AM - 12:00 PM"
-        location="Sunset Beach"
-      />
-      <EventCard
-        title="Food Bank Assistance"
-        org="Community Pantry"
-        date="Jun 18, 2023"
-        time="2:00 PM - 5:00 PM"
-        location="Downtown Community Center"
-      />
+    <SectionCard title="Upcoming Events" actionText="View Calendar" onPressAction={onViewCalendar}>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading events...</Text>
+        </View>
+      ) : events.length > 0 ? (
+        events.map((event, index) => (
+          <EventCard
+            key={event.id || index}
+            title={event.title}
+            org={event.organizationName || event.org}
+            date={event.date}
+            time={`${event.time} - ${event.endTime}`}
+            location={event.location}
+          />
+        ))
+      ) : (
+        <View style={styles.noEventsContainer}>
+          <Text style={styles.noEventsText}>No upcoming events</Text>
+        </View>
+      )}
     </SectionCard>
   );
 }
@@ -322,24 +512,77 @@ function EventCard({ title, org, date, time, location }: { title: string; org: s
   );
 }
 
-function BadgesSection() {
+function BadgesSection({ 
+  completedEvents, 
+  totalHours, 
+  uniqueOrganizations 
+}: { 
+  completedEvents: Event[]; 
+  totalHours: number; 
+  uniqueOrganizations: number; 
+}) {
+  // Calculate badge achievements based on real data
+  const hasFirstTimer = completedEvents.length >= 1;
+  const hasHelpingHand = totalHours >= 10;
+  const hasCommunityHero = uniqueOrganizations >= 5;
+
+  const badges = [
+    {
+      id: 'first-timer',
+      icon: <Ionicons name="sparkles-outline" size={18} color={hasFirstTimer ? "#F59E0B" : "#9CA3AF"} />,
+      title: "First Timer",
+      subtitle: hasFirstTimer ? "Completed your first volunteer event" : "Complete your first event",
+      earned: hasFirstTimer
+    },
+    {
+      id: 'helping-hand',
+      icon: <MaterialCommunityIcons name="hand-heart" size={18} color={hasHelpingHand ? "#F59E0B" : "#9CA3AF"} />,
+      title: "Helping Hand",
+      subtitle: hasHelpingHand ? `Volunteered for ${totalHours}+ hours` : "Volunteer for 10+ hours",
+      earned: hasHelpingHand
+    },
+    {
+      id: 'community-hero',
+      icon: <MaterialCommunityIcons name="account-star" size={18} color={hasCommunityHero ? "#F59E0B" : "#9CA3AF"} />,
+      title: "Community Hero",
+      subtitle: hasCommunityHero ? `Supported ${uniqueOrganizations}+ organizations` : "Support 5+ organizations",
+      earned: hasCommunityHero
+    }
+  ];
+
   return (
     <SectionCard title="Your Badges" actionText="View All" onPressAction={() => { }}>
       <View style={styles.badgeRow}>
-        <BadgeItem icon={<Ionicons name="sparkles-outline" size={18} color="#F59E0B" />} title="First Timer" subtitle="Completed your first volunteer event" />
-        <BadgeItem icon={<MaterialCommunityIcons name="hand-heart" size={18} color="#F59E0B" />} title="Helping Hand" subtitle={"Volunteered for\n10+ hours"} />
-        <BadgeItem icon={<MaterialCommunityIcons name="account-star" size={18} color="#F59E0B" />} title="Community Hero" subtitle={"Supported 5+\ndifferent organizations"} />
+        {badges.map((badge) => (
+          <BadgeItem 
+            key={badge.id}
+            icon={badge.icon} 
+            title={badge.title} 
+            subtitle={badge.subtitle}
+            earned={badge.earned}
+          />
+        ))}
       </View>
     </SectionCard>
   );
 }
 
-function BadgeItem({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+function BadgeItem({ 
+  icon, 
+  title, 
+  subtitle, 
+  earned 
+}: { 
+  icon: React.ReactNode; 
+  title: string; 
+  subtitle: string; 
+  earned: boolean; 
+}) {
   return (
     <View style={styles.badgeItem}>
-      <View style={styles.badgeIcon}>{icon}</View>
-      <Text style={styles.badgeTitle}>{title}</Text>
-      <Text style={styles.badgeSubtitle}>{subtitle}</Text>
+      <View style={[styles.badgeIcon, !earned && styles.badgeIconLocked]}>{icon}</View>
+      <Text style={[styles.badgeTitle, !earned && styles.badgeTitleLocked]}>{title}</Text>
+      <Text style={[styles.badgeSubtitle, !earned && styles.badgeSubtitleLocked]}>{subtitle}</Text>
     </View>
   );
 }
@@ -472,8 +715,11 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   badgeItem: { width: '32%', alignItems: 'center' },
   badgeIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  badgeIconLocked: { backgroundColor: '#F9FAFB', opacity: 0.6 },
   badgeTitle: { fontSize: 12, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  badgeTitleLocked: { color: '#9CA3AF' },
   badgeSubtitle: { fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 4 },
+  badgeSubtitleLocked: { color: '#D1D5DB' },
 
   impactList: { marginTop: 4 },
   impactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
@@ -537,5 +783,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     marginTop: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  noEventsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noEventsText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });

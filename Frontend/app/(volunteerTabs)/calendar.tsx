@@ -1,19 +1,72 @@
 import ProfileIcon from '@/components/ProfileIcon';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { useAuth } from '../../contexts/AuthContext';
+import { Event, eventService } from '../../services/eventService';
 
 const { width } = Dimensions.get('window');
 const sidebarWidth = width * 0.8;
 export default function CalendarScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-sidebarWidth)).current;
+  const [joinedEvents, setJoinedEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+
+  // Load user's joined events on component mount
+  useEffect(() => {
+    loadJoinedEvents();
+  }, []);
+
+  const loadJoinedEvents = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setIsLoading(true);
+      const events = await eventService.getUserJoinedEvents(user.id);
+      
+      // Filter for upcoming events only
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      const upcomingJoinedEvents = events.filter(event => {
+        // Parse MM/DD/YYYY format
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        eventDate.setHours(0, 0, 0, 0);
+        
+        return eventDate >= now && event.status !== 'Completed';
+      });
+      
+      // Sort by date (earliest first)
+      upcomingJoinedEvents.sort((a, b) => {
+        const [monthA, dayA, yearA] = a.date.split('/').map(Number);
+        const [monthB, dayB, yearB] = b.date.split('/').map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setJoinedEvents(upcomingJoinedEvents);
+    } catch (error) {
+      console.error('Failed to load joined events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const toggleMenu = () => {
     const toValue = isMenuOpen ? -sidebarWidth : 0;
@@ -65,29 +118,6 @@ export default function CalendarScreen() {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
-  
-  const upcomingEvents = [
-    {
-      id: 'e1',
-      title: 'Beach Cleanup',
-      org: 'Ocean Guardians',
-      date: 'Jun 15, 2023',
-      time: '9:00 AM - 12:00 PM',
-      location: 'Sunset Beach',
-      type: 'Environmental',
-      status: 'Confirmed',
-    },
-    {
-      id: 'e2',
-      title: 'Food Bank Assistance',
-      org: 'Community Pantry',
-      date: 'Jun 18, 2023',
-      time: '2:00 PM - 5:00 PM',
-      location: 'Downtown Community Center',
-      type: 'Community Service',
-      status: 'Confirmed',
-    },
-  ];
 
   const generateCalendarDays = () => {
     const days = [];
@@ -99,9 +129,9 @@ export default function CalendarScreen() {
     
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const hasEvents = upcomingEvents.some(event => {
-        const eventDate = new Date(event.date);
-        return eventDate.getDate() === day && eventDate.getMonth() === currentMonth;
+      const hasEvents = joinedEvents.some(event => {
+        const [month, dayFromEvent, year] = event.date.split('/').map(Number);
+        return dayFromEvent === day && month - 1 === currentMonth && year === currentYear;
       });
       days.push({ day, hasEvents, isEmpty: false });
     }
@@ -117,6 +147,52 @@ export default function CalendarScreen() {
       newDate.setMonth(newDate.getMonth() + 1);
     }
     setSelectedDate(newDate);
+  };
+
+  // Handle unjoining an event
+  const handleUnjoinEvent = async (event: Event) => {
+    if (!user?.id) {
+      console.error('User ID is missing');
+      return;
+    }
+
+    try {
+      await eventService.unjoinEvent(event.id, user.id);
+      
+      // Reload joined events to reflect the change
+      await loadJoinedEvents();
+    } catch (error) {
+      console.error('Error unjoining event:', error);
+    }
+  };
+
+  // Show confirmation dialog
+  const showConfirmation = (title: string, message: string, action: () => void) => {
+    setConfirmTitle(title);
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setShowConfirmModal(true);
+  };
+
+  // Handle confirmed action
+  const handleConfirmAction = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+  };
+
+  // Handle cancel confirmation
+  const handleCancelConfirmation = () => {
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+  };
+
+  // Handle showing event details
+  const handleShowDetails = (event: Event) => {
+    setSelectedEvent(event);
+    setShowDetailsModal(true);
   };
 
   return (
@@ -229,9 +305,28 @@ export default function CalendarScreen() {
           </TouchableOpacity>
         </View>
 
-        {upcomingEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading events...</Text>
+          </View>
+        ) : joinedEvents.length > 0 ? (
+          joinedEvents.map((event) => (
+            <EventCard 
+              key={event.id} 
+              event={event} 
+              onUnjoin={() => showConfirmation(
+                'Unjoin Event',
+                `Are you sure you want to unjoin from "${event.title}"? This action cannot be undone.`,
+                () => handleUnjoinEvent(event)
+              )}
+              onShowDetails={() => handleShowDetails(event)}
+            />
+          ))
+        ) : (
+          <View style={styles.noEventsContainer}>
+            <Text style={styles.noEventsText}>No upcoming events</Text>
+          </View>
+        )}
 
         <View style={styles.statsSection}>
           <View style={styles.statCard}>
@@ -251,21 +346,160 @@ export default function CalendarScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Event Details Modal */}
+      {showDetailsModal && selectedEvent && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Event Details</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setShowDetailsModal(false)}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.detailTitle}>{selectedEvent.title}</Text>
+              <Text style={styles.detailOrg}>{selectedEvent.organizationName || selectedEvent.org}</Text>
+              
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Event Information</Text>
+                <View style={styles.detailRow}>
+                  <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                  <Text style={styles.detailText}>{selectedEvent.date}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="time-outline" size={20} color="#6B7280" />
+                  <Text style={styles.detailText}>{selectedEvent.time} - {selectedEvent.endTime}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="location-outline" size={20} color="#6B7280" />
+                  <Text style={styles.detailText}>{selectedEvent.location}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="people-outline" size={20} color="#6B7280" />
+                  <Text style={styles.detailText}>
+                    Max {selectedEvent.maxParticipants} volunteers
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>About This Event</Text>
+                <Text style={styles.detailDescription}>
+                  {selectedEvent.description || 'No description available.'}
+                </Text>
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Event Details</Text>
+                <View style={styles.detailRow}>
+                  <Ionicons name="heart-outline" size={20} color="#6B7280" />
+                  <Text style={styles.detailText}>Cause: {selectedEvent.cause}</Text>
+                </View>
+                {selectedEvent.skills && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="construct-outline" size={20} color="#6B7280" />
+                    <Text style={styles.detailText}>Skills: {selectedEvent.skills}</Text>
+                  </View>
+                )}
+                {selectedEvent.ageRestriction && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="person-outline" size={20} color="#6B7280" />
+                    <Text style={styles.detailText}>Age: {selectedEvent.ageRestriction}</Text>
+                  </View>
+                )}
+                {selectedEvent.equipment && (
+                  <View style={styles.detailRow}>
+                    <Ionicons name="bag-outline" size={20} color="#6B7280" />
+                    <Text style={styles.detailText}>Equipment: {selectedEvent.equipment}</Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalSecondaryButton]}
+                onPress={() => setShowDetailsModal(false)}
+              >
+                <Text style={styles.modalSecondaryButtonText}>Close</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalPrimaryButton]}
+                onPress={() => {
+                  setShowDetailsModal(false);
+                  showConfirmation(
+                    'Unjoin Event',
+                    `Are you sure you want to unjoin from "${selectedEvent.title}"? This action cannot be undone.`,
+                    () => handleUnjoinEvent(selectedEvent)
+                  );
+                }}
+              >
+                <Text style={styles.modalPrimaryButtonText}>Unjoin Event</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContainer}>
+            <View style={styles.confirmModalHeader}>
+              <Text style={styles.confirmModalTitle}>{confirmTitle}</Text>
+            </View>
+            
+            <View style={styles.confirmModalContent}>
+              <Text style={styles.confirmModalMessage}>{confirmMessage}</Text>
+            </View>
+
+            <View style={styles.confirmModalActions}>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, styles.confirmModalCancelButton]}
+                onPress={handleCancelConfirmation}
+              >
+                <Text style={styles.confirmModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, styles.confirmModalConfirmButton]}
+                onPress={handleConfirmAction}
+              >
+                <Text style={styles.confirmModalConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-function EventCard({ event }: { event: any }) {
+function EventCard({ 
+  event, 
+  onUnjoin, 
+  onShowDetails 
+}: { 
+  event: Event;
+  onUnjoin: () => void;
+  onShowDetails: () => void;
+}) {
   return (
     <View style={styles.eventCard}>
       <View style={styles.eventCardHeader}>
         <View style={styles.eventTitleRow}>
           <Text style={styles.eventTitle}>{event.title}</Text>
-          <View style={styles.statusPill}>
-            <Text style={styles.statusText}>{event.status}</Text>
+          <View style={[styles.statusPill, event.status === 'Completed' && styles.statusPillCompleted]}>
+            <Text style={[styles.statusText, event.status === 'Completed' && styles.statusTextCompleted]}>
+              {event.status || 'Upcoming'}
+            </Text>
           </View>
         </View>
-        <Text style={styles.eventOrg}>{event.org}</Text>
+        <Text style={styles.eventOrg}>{event.organizationName || event.org}</Text>
       </View>
 
       <View style={styles.eventDetails}>
@@ -275,7 +509,7 @@ function EventCard({ event }: { event: any }) {
         </View>
         <View style={styles.eventDetailRow}>
           <Ionicons name="time-outline" size={14} color="#6B7280" />
-          <Text style={styles.eventDetailText}>{event.time}</Text>
+          <Text style={styles.eventDetailText}>{event.time} - {event.endTime}</Text>
         </View>
         <View style={styles.eventDetailRow}>
           <Ionicons name="location-outline" size={14} color="#6B7280" />
@@ -285,14 +519,20 @@ function EventCard({ event }: { event: any }) {
 
       <View style={styles.eventFooter}>
         <View style={styles.typePill}>
-          <Text style={styles.typeText}>{event.type}</Text>
+          <Text style={styles.typeText}>{event.cause}</Text>
         </View>
         <View style={styles.eventActions}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={onShowDetails}
+          >
             <Text style={styles.actionButtonText}>Details</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Edit</Text>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.unjoinButton]}
+            onPress={onUnjoin}
+          >
+            <Text style={[styles.actionButtonText, styles.unjoinButtonText]}>Unjoin</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -453,6 +693,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#10B981',
   },
+  statusPillCompleted: {
+    backgroundColor: '#6B728020',
+  },
+  statusTextCompleted: {
+    color: '#6B7280',
+  },
   eventOrg: {
     fontSize: 14,
     color: '#2563EB',
@@ -574,5 +820,214 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  noEventsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  noEventsText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  unjoinButton: {
+    backgroundColor: '#EF4444',
+  },
+  unjoinButtonText: {
+    color: '#FFFFFF',
+  },
+  // Modal styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    margin: 20,
+    maxHeight: '80%',
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalContent: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  detailTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  detailOrg: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginBottom: 20,
+  },
+  detailSection: {
+    marginBottom: 24,
+  },
+  detailSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detailText: {
+    fontSize: 16,
+    color: '#374151',
+    marginLeft: 12,
+    flex: 1,
+  },
+  detailDescription: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalPrimaryButton: {
+    backgroundColor: '#EF4444',
+  },
+  modalSecondaryButton: {
+    backgroundColor: '#F3F4F6',
+  },
+  modalPrimaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalSecondaryButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Confirmation Modal styles
+  confirmModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    margin: 20,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  confirmModalHeader: {
+    padding: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  confirmModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  confirmModalContent: {
+    padding: 20,
+    paddingTop: 15,
+  },
+  confirmModalMessage: {
+    fontSize: 16,
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  confirmModalActions: {
+    flexDirection: 'row',
+    padding: 20,
+    paddingTop: 10,
+    gap: 12,
+  },
+  confirmModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmModalCancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  confirmModalConfirmButton: {
+    backgroundColor: '#EF4444',
+  },
+  confirmModalCancelText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmModalConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
