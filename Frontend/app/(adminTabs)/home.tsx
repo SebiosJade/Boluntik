@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Animated, Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import ProfileDropdown from '@/components/ProfileDropdown';
 
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
       id: 'transaction-fees',
       title: 'Transaction Fee Settings',
       description: 'Set platform percentage for fundraising campaigns',
-      icon: 'percent',
+      icon: 'calculator',
       color: '#E9D5FF',
     },
     {

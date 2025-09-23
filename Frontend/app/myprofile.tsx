@@ -1,16 +1,90 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { API } from '../constants/Api';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfileEdit } from '../hooks/useProfileEdit';
+import { EditProfileModal } from '../components/EditProfileModal';
+import { uploadAvatar, deleteAvatar } from '../services/avatarService';
+
+// Constants
+const BADGES = [
+    { id: 1, name: 'First Responder', icon: 'shield-checkmark', color: '#EF4444' },
+    { id: 2, name: 'Community Leader', icon: 'people', color: '#3B82F6' },
+    { id: 3, name: 'Long-term Volunteer', icon: 'time', color: '#10B981' },
+    { id: 4, name: 'Training Champion', icon: 'school', color: '#8B5CF6' },
+    { id: 5, name: 'Emergency Ready', icon: 'warning', color: '#F59E0B' },
+    { id: 6, name: 'Team Player', icon: 'person-add', color: '#06B6D4' }
+  ];
+
+const INTEREST_DISPLAY_MAP: { [key: string]: string } = {
+  'community': 'Community Services',
+  'health': 'Health',
+  'human-rights': 'Human Rights',
+  'animals': 'Animals',
+  'disaster': 'Disaster Relief',
+  'tech': 'Tech',
+  'arts': 'Arts & Culture',
+  'religious': 'Religious',
+  'education': 'Education',
+  'environment': 'Environment'
+};
+
+// Helper functions
+
+const getInterestDisplayName = (interestId: string) => {
+  return INTEREST_DISPLAY_MAP[interestId] || interestId;
+};
+
+const getRoleDisplayName = (role: string) => {
+  switch (role) {
+    case 'admin':
+      return 'Administrator';
+    case 'organization':
+      return 'Organization';
+    case 'volunteer':
+      return 'Volunteer';
+    default:
+      return role;
+  }
+};
 
 export default function MyProfileScreen() {
   const router = useRouter();
   const { user, token, logout } = useAuth();
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Profile edit functionality
+  const {
+    isEditing,
+    showEditModal,
+    formData,
+    availableSkills,
+    availableAvailability,
+    availableInterests,
+    openEditModal,
+    closeEditModal,
+    updateField,
+    toggleArrayItem,
+    saveProfile,
+    hasChanges
+  } = useProfileEdit();
+
+  // Profile data state
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userInterests, setUserInterests] = useState<string[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // Display state for expandable sections
+  const [showAllInterests, setShowAllInterests] = useState(false);
+  const [showAllSkills, setShowAllSkills] = useState(false);
+  const [showAllAvailability, setShowAllAvailability] = useState(false);
+
+  // Password change modal state
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -20,80 +94,215 @@ export default function MyProfileScreen() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const profileData = {   
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    bio: 'Passionate volunteer with 5+ years of experience in community service and emergency response.',
-    avatar: require('../assets/images/react-logo.png'),
-    stats: {
-      totalHours: 247,
-      eventsAttended: 34,
-      badgesEarned: 12,
-      communitiesJoined: 8
+  // Delete account state
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch user profile data on component mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    if (!token) {
+      setIsLoadingProfile(false);
+      return;
+    }
+
+    try {
+      // Fetch extended profile information
+      const profileResponse = await fetch(API.getProfile, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        setUserProfile(profileData.user);
+        setUserInterests(profileData.user.interests || []);
+      } else {
+        // Fallback to the old API
+        const fallbackResponse = await fetch(API.me, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          setUserProfile(fallbackData.user);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      // Fallback to the old API
+      try {
+        const fallbackResponse = await fetch(API.me, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          setUserProfile(fallbackData.user);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
+    } finally {
+      setIsLoadingProfile(false);
     }
   };
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'volunteer',
-      title: 'Community Garden Cleanup',
-      date: '2 days ago',
-      hours: 4
-    },
-    {
-      id: 2,
-      type: 'training',
-      title: 'First Aid Certification',
-      date: '1 week ago',
-      hours: 8
-    },
-    {
-      id: 3,
-      type: 'event',
-      title: 'Food Bank Distribution',
-      date: '2 weeks ago',
-      hours: 6
+  // ==================== AVATAR FUNCTIONS ====================
+  const showImagePickerOptions = () => {
+    const hasCustomAvatar = userProfile?.avatar && userProfile.avatar !== '/uploads/avatars/default-avatar.png';
+    
+    const options: any[] = [
+      {
+        text: 'Take Photo',
+        onPress: () => takePhoto(),
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: () => pickImage(),
+      },
+    ];
+
+    // Add delete option if user has a custom avatar
+    if (hasCustomAvatar) {
+      options.push({
+        text: 'Delete Photo',
+        onPress: () => deleteAvatarImage(),
+        style: 'destructive',
+      });
     }
-  ];
 
-  const badges = [
-    { id: 1, name: 'First Responder', icon: 'shield-checkmark', color: '#EF4444' },
-    { id: 2, name: 'Community Leader', icon: 'people', color: '#3B82F6' },
-    { id: 3, name: 'Long-term Volunteer', icon: 'time', color: '#10B981' },
-    { id: 4, name: 'Training Champion', icon: 'school', color: '#8B5CF6' },
-    { id: 5, name: 'Emergency Ready', icon: 'warning', color: '#F59E0B' },
-    { id: 6, name: 'Team Player', icon: 'handshake', color: '#06B6D4' }
-  ];
+    options.push({
+      text: 'Cancel',
+      style: 'cancel',
+    });
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'volunteer':
-        return 'heart';
-      case 'training':
-        return 'school';
-      case 'event':
-        return 'calendar';
-      default:
-        return 'checkmark-circle';
+    Alert.alert(
+      'Select Avatar',
+      'Choose how you want to set your profile picture',
+      options
+    );
+  };
+
+  const takePhoto = async () => {
+    try {
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera permission is required to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadAvatarImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
 
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case 'volunteer':
-        return '#EF4444';
-      case 'training':
-        return '#8B5CF6';
-      case 'event':
-        return '#10B981';
-      default:
-        return '#6B7280';
+  const pickImage = async () => {
+    try {
+      // Request media library permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Media library permission is required to select photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadAvatarImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
     }
   };
 
+  const uploadAvatarImage = async (imageUri: string) => {
+    if (!token) {
+      Alert.alert('Error', 'Authentication required. Please log in again.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const response = await uploadAvatar(imageUri, token);
+      
+      // Update the user profile with new avatar
+      setUserProfile((prev: any) => ({
+        ...prev,
+        avatar: response.avatar
+      }));
+
+      Alert.alert('Success', 'Avatar updated successfully!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      Alert.alert('Error', 'Failed to upload avatar. Please try again.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const deleteAvatarImage = async () => {
+    if (!token) {
+      Alert.alert('Error', 'Authentication required. Please log in again.');
+      return;
+    }
+
+    // Show confirmation dialog
+    Alert.alert(
+      'Delete Avatar',
+      'Are you sure you want to delete your profile picture? It will be reset to the default avatar.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsUploadingAvatar(true);
+            try {
+              const response = await deleteAvatar(token);
+              
+              // Update the user profile with default avatar
+              setUserProfile((prev: any) => ({
+                ...prev,
+                avatar: response.avatar
+              }));
+
+              Alert.alert('Success', 'Avatar deleted successfully!');
+            } catch (error) {
+              console.error('Error deleting avatar:', error);
+              Alert.alert('Error', 'Failed to delete avatar. Please try again.');
+            } finally {
+              setIsUploadingAvatar(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
+
+  // ==================== ACCOUNT MANAGEMENT ====================
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
@@ -174,6 +383,7 @@ export default function MyProfileScreen() {
     }
   };
 
+  // ==================== PASSWORD CHANGE FUNCTIONS ====================
   const handleChangePassword = () => {
     setShowChangePasswordModal(true);
   };
@@ -279,7 +489,25 @@ export default function MyProfileScreen() {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Profile</Text>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity 
+          style={styles.editButton}
+          onPress={() => {
+            // Create a test profile data if userProfile is not available
+            const testProfileData = userProfile || {
+              name: user?.name || 'Test User',
+              email: user?.email || 'test@example.com',
+              bio: '',
+              phone: '',
+              location: '',
+              skills: [],
+              availability: [],
+              interests: []
+            };
+            
+            openEditModal(testProfileData);
+          }}
+          activeOpacity={0.7}
+        >
           <Ionicons name="create-outline" size={24} color="#3B82F6" />
         </TouchableOpacity>
       </View>
@@ -287,74 +515,190 @@ export default function MyProfileScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          <Image source={profileData.avatar} style={styles.avatar} />
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{profileData.name}</Text>
-            <Text style={styles.profileEmail}>{profileData.email}</Text>
-            <View style={styles.locationContainer}>
-              <Ionicons name="location-outline" size={16} color="#6B7280" />
-              <Text style={styles.locationText}>{profileData.location}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Bio */}
-        <View style={styles.bioSection}>
-          <Text style={styles.bioText}>{profileData.bio}</Text>
-        </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Ionicons name="time-outline" size={24} color="#3B82F6" />
-            <Text style={styles.statValue}>{profileData.stats.totalHours}</Text>
-            <Text style={styles.statLabel}>Total Hours</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={24} color="#10B981" />
-            <Text style={styles.statValue}>{profileData.stats.eventsAttended}</Text>
-            <Text style={styles.statLabel}>Events</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="ribbon-outline" size={24} color="#F59E0B" />
-            <Text style={styles.statValue}>{profileData.stats.badgesEarned}</Text>
-            <Text style={styles.statLabel}>Badges</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="people-outline" size={24} color="#F59E0B" />
-            <Text style={styles.statValue}>{profileData.stats.communitiesJoined}</Text>
-            <Text style={styles.statLabel}>Communities</Text>
-          </View>
-        </View>
-
-        {/* Recent Activities */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activities</Text>
-          {recentActivities.map((activity) => (
-            <View key={activity.id} style={styles.activityCard}>
-              <View style={styles.activityIconContainer}>
-                <Ionicons 
-                  name={getActivityIcon(activity.type) as any}
-                  size={20} 
-                  color={getActivityColor(activity.type)} 
+          {/* Centered Avatar and Basic Info */}
+          <View style={styles.centeredProfileInfo}>
+            <TouchableOpacity 
+              onPress={showImagePickerOptions}
+              style={styles.avatarContainer}
+              disabled={isUploadingAvatar}
+            >
+              {userProfile?.avatar && userProfile.avatar !== '/uploads/avatars/default-avatar.png' ? (
+                <Image 
+                  source={{ uri: `${API.BASE_URL}${userProfile.avatar}` }} 
+                  style={styles.centeredAvatar} 
                 />
+              ) : (
+                <View style={styles.defaultAvatarContainer}>
+                  <Ionicons name="person" size={40} color="#9CA3AF" />
+            </View>
+              )}
+              {isUploadingAvatar && (
+                <View style={styles.uploadingOverlay}>
+                  <Ionicons name="cloud-upload-outline" size={24} color="#FFFFFF" />
+          </View>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.centeredProfileName}>
+              {isLoadingProfile ? 'Loading...' : (userProfile?.name || user?.name || 'User')}
+            </Text>
+            <View style={styles.centeredRoleContainer}>
+              <Ionicons name="person-outline" size={16} color="#6B7280" />
+              <Text style={styles.centeredRoleText}>
+                {isLoadingProfile ? 'Loading...' : getRoleDisplayName(userProfile?.role || user?.role || 'volunteer')}
+              </Text>
+        </View>
+        </View>
+
+          {/* Email and Location Section */}
+          <View style={styles.emailLocationSection}>
+            <View style={styles.emailLocationItem}>
+              <Ionicons name="mail-outline" size={20} color="#6B7280" />
+              <Text style={styles.emailLocationText}>
+                {isLoadingProfile ? 'Loading...' : (userProfile?.email || user?.email || 'user@example.com')}
+              </Text>
+          </View>
+            <View style={styles.emailLocationItem}>
+              <Ionicons name="call-outline" size={20} color="#6B7280" />
+              <Text style={styles.emailLocationText}>
+                {isLoadingProfile ? 'Loading...' : (userProfile?.phone || 'Phone not provided')}
+              </Text>
+          </View>
+            <View style={styles.emailLocationItem}>
+              <Ionicons name="location-outline" size={20} color="#6B7280" />
+              <Text style={styles.emailLocationText}>
+                {isLoadingProfile ? 'Loading...' : (userProfile?.location || 'Location not provided')}
+              </Text>
+          </View>
+          </View>
+
+          {/* Interests Section */}
+          {userInterests.length > 0 && (
+            <View style={styles.interestsSection}>
+              <Text style={styles.interestsSectionTitle}>Interests</Text>
+              <View style={styles.interestsChips}>
+                {(showAllInterests ? userInterests : userInterests.slice(0, 3)).map((interest, index) => (
+                  <View key={index} style={styles.interestChip}>
+                    <Text style={styles.interestChipText}>
+                      {getInterestDisplayName(interest)}
+                    </Text>
+        </View>
+                ))}
+                {userInterests.length > 3 && !showAllInterests && (
+                  <TouchableOpacity 
+                    style={[styles.interestChip, styles.clickableInterestChip]}
+                    onPress={() => setShowAllInterests(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.interestChipText, styles.clickableInterestChipText]}>
+                      +{userInterests.length - 3} more
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {showAllInterests && userInterests.length > 3 && (
+                  <TouchableOpacity 
+                    style={[styles.interestChip, styles.clickableInterestChip]}
+                    onPress={() => setShowAllInterests(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.interestChipText, styles.clickableInterestChipText]}>
+                      Show less
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>{activity.title}</Text>
-                <Text style={styles.activityDate}>{activity.date}</Text>
+            </View>
+          )}
+
+          {/* Skills Section - Always show header */}
+          <View style={styles.skillsSection}>
+            <Text style={styles.skillsSectionTitle}>Skills</Text>
+            {userProfile?.skills && userProfile.skills.length > 0 ? (
+              <View style={styles.skillsChips}>
+                {(showAllSkills ? userProfile.skills : userProfile.skills.slice(0, 3)).map((skill: string, index: number) => (
+                  <View key={index} style={styles.skillChip}>
+                    <Text style={styles.skillChipText}>{skill}</Text>
               </View>
-              <View style={styles.activityHours}>
-                <Text style={styles.hoursText}>{activity.hours}h</Text>
+                ))}
+                {userProfile.skills.length > 3 && !showAllSkills && (
+                  <TouchableOpacity 
+                    style={[styles.skillChip, styles.clickableSkillChip]}
+                    onPress={() => setShowAllSkills(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.skillChipText, styles.clickableSkillChipText]}>
+                      +{userProfile.skills.length - 3} more
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {showAllSkills && userProfile.skills.length > 3 && (
+                  <TouchableOpacity 
+                    style={[styles.skillChip, styles.clickableSkillChip]}
+                    onPress={() => setShowAllSkills(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.skillChipText, styles.clickableSkillChipText]}>
+                      Show less
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
+            ) : (
+              <Text style={styles.emptyStateText}>No skills added yet</Text>
+            )}
+              </View>
+
+          {/* Availability Section - Always show header */}
+          <View style={styles.availabilitySection}>
+            <Text style={styles.availabilitySectionTitle}>Availability</Text>
+            {userProfile?.availability && userProfile.availability.length > 0 ? (
+              <View style={styles.availabilityChips}>
+                {(showAllAvailability ? userProfile.availability : userProfile.availability.slice(0, 3)).map((availability: string, index: number) => (
+                  <View key={index} style={styles.availabilityChip}>
+                    <Text style={styles.availabilityChipText}>{availability}</Text>
             </View>
           ))}
+                {userProfile.availability.length > 3 && !showAllAvailability && (
+                  <TouchableOpacity 
+                    style={[styles.availabilityChip, styles.clickableAvailabilityChip]}
+                    onPress={() => setShowAllAvailability(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.availabilityChipText, styles.clickableAvailabilityChipText]}>
+                      +{userProfile.availability.length - 3} more
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {showAllAvailability && userProfile.availability.length > 3 && (
+                  <TouchableOpacity 
+                    style={[styles.availabilityChip, styles.clickableAvailabilityChip]}
+                    onPress={() => setShowAllAvailability(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.availabilityChipText, styles.clickableAvailabilityChipText]}>
+                      Show less
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <Text style={styles.emptyStateText}>No availability set</Text>
+            )}
         </View>
+
+          {/* Bio Section */}
+        <View style={styles.bioSection}>
+            <Text style={styles.bioText}>
+              {isLoadingProfile ? 'Loading...' : (userProfile?.bio || 'No bio available')}
+            </Text>
+          </View>               
+        </View>
+
 
         {/* Badges */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Badges Earned</Text>
           <View style={styles.badgesGrid}>
-            {badges.map((badge) => (
+            {BADGES.map((badge) => (
               <View key={badge.id} style={styles.badgeCard}>
                 <View style={[styles.badgeIcon, { backgroundColor: badge.color + '20' }]}>
                   <Ionicons name={badge.icon as any} size={24} color={badge.color} />
@@ -365,16 +709,110 @@ export default function MyProfileScreen() {
           </View>
         </View>
 
-        {/* Contact Info */}
+        {/* Volunteer Impact Dashboard */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Information</Text>
-          <View style={styles.contactItem}>
-            <Ionicons name="mail-outline" size={20} color="#6B7280" />
-            <Text style={styles.contactText}>{profileData.email}</Text>
+          <Text style={styles.sectionTitle}>Your Volunteer Impact</Text>
+          <View style={styles.impactDashboard}>
+            {/* Bar Chart Section */}
+            <View style={styles.chartContainer}>
+              <View style={styles.chart}>
+                <View style={styles.chartBars}>
+                  <View style={[styles.bar, { height: 25 }]}>
+                    <Text style={styles.barValue}>5</Text>
+                  </View>
+                  <View style={[styles.bar, { height: 40 }]}>
+                    <Text style={styles.barValue}>8</Text>
+                  </View>
+                  <View style={[styles.bar, { height: 60 }]}>
+                    <Text style={styles.barValue}>12</Text>
+                  </View>
+                  <View style={[styles.bar, { height: 50 }]}>
+                    <Text style={styles.barValue}>10</Text>
+                  </View>
+                  <View style={[styles.bar, { height: 75 }]}>
+                    <Text style={styles.barValue}>15</Text>
+                  </View>
+                  <View style={[styles.bar, { height: 95 }]}>
+                    <Text style={styles.barValue}>19</Text>
+                  </View>
+                </View>
+                <View style={styles.chartLabels}>
+                  <Text style={styles.chartLabel}>Jan</Text>
+                  <Text style={styles.chartLabel}>Feb</Text>
+                  <Text style={styles.chartLabel}>Mar</Text>
+                  <Text style={styles.chartLabel}>Apr</Text>
+                  <Text style={styles.chartLabel}>May</Text>
+                  <Text style={styles.chartLabel}>Jun</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Metrics Grid */}
+            <View style={styles.metricsGrid}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Hours Volunteered</Text>
+                <Text style={styles.metricValue}>70</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Events Attended</Text>
+                <Text style={styles.metricValue}>12</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Organizations Helped</Text>
+                <Text style={styles.metricValue}>5</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Lives Impacted</Text>
+                <Text style={styles.metricValue}>250+</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.contactItem}>
-            <Ionicons name="call-outline" size={20} color="#6B7280" />
-            <Text style={styles.contactText}>{profileData.phone}</Text>
+        </View>
+
+        {/* Activity History */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Activity History</Text>
+          <View style={styles.activityList}>
+            <ActivityItem
+              icon="calendar-outline"
+              title="Beach Cleanup Event"
+              organization="Ocean Guardians"
+              date="June 15, 2024"
+              time="9:00 AM - 12:00 PM"
+              status="completed"
+            />
+            <ActivityItem
+              icon="restaurant-outline"
+              title="Food Bank Volunteer"
+              organization="Community Pantry"
+              date="June 12, 2024"
+              time="2:00 PM - 5:00 PM"
+              status="completed"
+            />
+            <ActivityItem
+              icon="school-outline"
+              title="Tutoring Session"
+              organization="Education First"
+              date="June 10, 2024"
+              time="3:00 PM - 4:30 PM"
+              status="completed"
+            />
+            <ActivityItem
+              icon="medical-outline"
+              title="Health Check-up Drive"
+              organization="Health Plus"
+              date="June 8, 2024"
+              time="10:00 AM - 2:00 PM"
+              status="completed"
+            />
+            <ActivityItem
+              icon="leaf-outline"
+              title="Tree Planting Initiative"
+              organization="Green Earth"
+              date="June 5, 2024"
+              time="8:00 AM - 11:00 AM"
+              status="completed"
+            />
           </View>
         </View>
 
@@ -509,18 +947,77 @@ export default function MyProfileScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+      </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        visible={showEditModal}
+        onClose={closeEditModal}
+        onSave={() => saveProfile(token!, fetchUserProfile)}
+        isEditing={isEditing}
+        formData={formData}
+        availableSkills={availableSkills}
+        availableAvailability={availableAvailability}
+        availableInterests={availableInterests}
+        updateField={updateField}
+        toggleArrayItem={toggleArrayItem}
+        hasChanges={hasChanges}
+      />
     </SafeAreaView>
   );
 }
 
+// Activity Item Component
+function ActivityItem({ 
+  icon, 
+  title, 
+  organization, 
+  date, 
+  time, 
+  status 
+}: { 
+  icon: string; 
+  title: string; 
+  organization: string; 
+  date: string; 
+  time: string; 
+  status: string; 
+}) {
+  return (
+    <View style={styles.activityItem}>
+      <View style={styles.activityIconContainer}>
+        <Ionicons name={icon as any} size={20} color="#3B82F6" />
+      </View>
+      <View style={styles.activityContent}>
+        <Text style={styles.activityTitle}>{title}</Text>
+        <Text style={styles.activityOrganization}>{organization}</Text>
+        <View style={styles.activityMeta}>
+          <Text style={styles.activityDate}>{date}</Text>
+          <Text style={styles.activityTime}>{time}</Text>
+        </View>
+      </View>
+      <View style={[styles.activityStatus, status === 'completed' && styles.activityStatusCompleted]}>
+        <Text style={[styles.activityStatusText, status === 'completed' && styles.activityStatusTextCompleted]}>
+          {status === 'completed' ? 'Completed' : status}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  // Main container
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  content: {
+    flex: 1,
+  },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -542,87 +1039,188 @@ const styles = StyleSheet.create({
   editButton: {
     padding: 8,
   },
-  content: {
-    flex: 1,
-  },
+
+  // Profile card
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 20,
     backgroundColor: '#FFFFFF',
     marginBottom: 16,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 16,
+  centeredProfileInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  profileInfo: {
-    flex: 1,
+  centeredAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 12,
   },
-  profileName: {
-    fontSize: 24,
+  centeredProfileName: {
+    fontSize: 28,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
-  },
-  profileEmail: {
-    fontSize: 16,
-    color: '#6B7280',
     marginBottom: 8,
+    textAlign: 'center',
   },
-  locationContainer: {
+  centeredRoleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  locationText: {
-    fontSize: 14,
-    color: '#6B7280',
+  centeredRoleText: {
+    fontSize: 16,
+    color: '#3B82F6',
     marginLeft: 4,
+    fontWeight: '500',
   },
+
+  // Email and location
+  emailLocationSection: {
+    marginBottom: 20,
+  },
+  emailLocationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  emailLocationText: {
+    fontSize: 16,
+    color: '#374151',
+    marginLeft: 12,
+  },
+
+  // Sections (interests, skills, availability)
+  interestsSection: {
+    marginBottom: 20,
+  },
+  skillsSection: {
+    marginBottom: 20,
+  },
+  availabilitySection: {
+    marginBottom: 20,
+  },
+  interestsSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  skillsSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  availabilitySectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+
+  // Chips
+  interestsChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  skillsChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  availabilityChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  interestChip: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#0EA5E9',
+  },
+  skillChip: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  availabilityChip: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#9CA3AF',
+  },
+  interestChipText: {
+    fontSize: 14,
+    color: '#0C4A6E',
+    fontWeight: '500',
+  },
+  skillChipText: {
+    fontSize: 14,
+    color: '#065F46',
+    fontWeight: '500',
+  },
+  availabilityChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  clickableInterestChip: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#0284C7',
+    borderWidth: 1.5,
+  },
+  clickableInterestChipText: {
+    color: '#0369A1',
+    fontWeight: '600',
+  },
+  clickableSkillChip: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#10B981',
+    borderWidth: 1.5,
+  },
+  clickableSkillChipText: {
+    color: '#059669',
+    fontWeight: '600',
+  },
+  clickableAvailabilityChip: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+    borderWidth: 1.5,
+  },
+  clickableAvailabilityChipText: {
+    color: '#D97706',
+    fontWeight: '600',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+
+  // Bio
   bioSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
+    alignItems: 'center',
   },
   bioText: {
     fontSize: 16,
     color: '#374151',
     lineHeight: 24,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginBottom: 8,
-    marginHorizontal: '1%',
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#6B7280',
     textAlign: 'center',
   },
+
+
+  // Sections
   section: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
@@ -641,46 +1239,9 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 16,
   },
-  activityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  activityIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  activityDate: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  activityHours: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  hoursText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
+
+
+  // Badges
   badgesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -705,18 +1266,165 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  contactItem: {
+
+  // Volunteer Impact Dashboard Styles
+  impactDashboard: {
+    marginTop: 12,
+  },
+  chartContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  chart: {
+    height: 120,
+    justifyContent: 'space-between',
+  },
+  chartBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 80,
+    paddingHorizontal: 8,
+  },
+  bar: {
+    width: 24,
+    backgroundColor: '#14B8A6',
+    borderRadius: 4,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 4,
+  },
+  barValue: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  chartLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    marginTop: 8,
+  },
+  chartLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    width: 24,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  metricCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  metricValue: {
+    fontSize: 24,
+    color: '#14B8A6',
+    fontWeight: '700',
+  },
+
+  // Activity History Styles
+  activityList: {
+    marginTop: 12,
+  },
+  activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  contactText: {
+  activityIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F9FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
     fontSize: 16,
-    color: '#374151',
-    marginLeft: 12,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
   },
+  activityOrganization: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  activityMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginRight: 8,
+  },
+  activityTime: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  activityStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  activityStatusCompleted: {
+    backgroundColor: '#D1FAE5',
+  },
+  activityStatusText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  activityStatusTextCompleted: {
+    color: '#059669',
+  },
+
+  // Settings
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -730,24 +1438,8 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginLeft: 8,
-  },
+
+  // Delete button
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -769,6 +1461,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     marginLeft: 8,
   },
+
   // Modal styles
   modalContainer: {
     flex: 1,
@@ -861,5 +1554,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+
+  // Avatar styles
+  avatarContainer: {
+    position: 'relative',
+  },
+  defaultAvatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

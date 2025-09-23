@@ -1,17 +1,116 @@
+import ProfileDropdown from '@/components/ProfileDropdown';
+import { useAuth } from '@/contexts/AuthContext';
+import { Event, eventService } from '@/services/eventService';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Animated, Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import ProfileDropdown from '@/components/ProfileDropdown';
+import { useEffect, useState } from 'react';
+import { Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 export default function OrganizationDashboard() {
   const router = useRouter();
+  const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-width));
+  
+  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [showViewAllModal, setShowViewAllModal] = useState(false);
+
+  // Load events from API
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    if (!user?.id) return;
+    
+    setIsLoadingEvents(true);
+    try {
+      const events = await eventService.getEventsByOrganization(user.id);
+      setCreatedEvents(events);
+    } catch (error) {
+      console.error('Failed to load events:', error);
+      Alert.alert('Error', 'Failed to load events');
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  // Calculate stats from created events
+  const getEventStats = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const eventsThisMonth = createdEvents.filter(event => {
+      // Parse MM/DD/YYYY format
+      const [month, day, year] = event.date.split('/').map(Number);
+      const eventDate = new Date(year, month - 1, day);
+      return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
+    }).length;
+    
+    const completedEvents = createdEvents.filter(event => {
+      // Parse MM/DD/YYYY format
+      const [month, day, year] = event.date.split('/').map(Number);
+      const eventDate = new Date(year, month - 1, day);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate < now;
+    }).length;
+
+    const upcomingEvents = createdEvents.filter(event => {
+      // Parse MM/DD/YYYY format
+      const [month, day, year] = event.date.split('/').map(Number);
+      const eventDate = new Date(year, month - 1, day);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= now;
+    }).length;
+
+    return {
+      eventsThisMonth,
+      completedEvents,
+      upcomingEvents
+    };
+  };
+
+  // Get the first upcoming event
+  const getFirstUpcomingEvent = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    const upcomingEvents = createdEvents.filter(event => {
+      // Parse MM/DD/YYYY format
+      const [month, day, year] = event.date.split('/').map(Number);
+      const eventDate = new Date(year, month - 1, day);
+      eventDate.setHours(0, 0, 0, 0);
+      
+      console.log('Event date comparison:', {
+        eventTitle: event.title,
+        eventDateString: event.date,
+        eventDate: eventDate.toISOString(),
+        now: now.toISOString(),
+        isUpcoming: eventDate >= now
+      });
+      
+      return eventDate >= now;
+    });
+    
+    return upcomingEvents
+      .sort((a, b) => {
+        const [monthA, dayA, yearA] = a.date.split('/').map(Number);
+        const [monthB, dayB, yearB] = b.date.split('/').map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 1); // Show only the first upcoming event
+  };
+
 
   const toggleMenu = () => {
     if (isMenuOpen) {
@@ -49,15 +148,13 @@ export default function OrganizationDashboard() {
     { id: 'impact', title: 'Impact Tracker', icon: 'trending-up-outline' },
   ];
 
-  const handleCreateEvent = () => {
-    console.log('Create New Event pressed');
-    // Navigate to create event screen
-  };
 
   const handleViewAllEvents = () => {
     console.log('View all events pressed');
-    // Navigate to events list
+    // Show modal with all events
+    setShowViewAllModal(true);
   };
+
 
   const handleQuickAccess = (section: string) => {
     console.log(`${section} pressed`);
@@ -76,6 +173,7 @@ export default function OrganizationDashboard() {
       router.push('/(organizationTabs)/impacttracker');
     }
   };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,32 +251,14 @@ export default function OrganizationDashboard() {
       </Animated.View>
 
       {/* Header with Search and Icons */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
-          <Ionicons name="menu" size={24} color="#374151" />
-        </TouchableOpacity>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#6B7280" style={styles.searchIcon} />
-          <Text style={styles.searchPlaceholder}>Search...</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={24} color="#374151" />
-          </TouchableOpacity>
-          <ProfileDropdown />
-        </View>
-      </View>
+      <ProfileDropdown showMenuButton={true} onMenuPress={toggleMenu} />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Dashboard Header */}
-        <View style={styles.header}>
+        <View style={styles.dashboardHeader}>
           <View style={styles.titleSection}>
             <Text style={styles.headerTitle}>Organization Dashboard</Text>
           </View>
-          <TouchableOpacity style={styles.createEventButton} onPress={handleCreateEvent}>
-            <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.createEventText}>Create Event</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Upcoming Events Section */}
@@ -191,37 +271,31 @@ export default function OrganizationDashboard() {
               <Text style={styles.sectionTitle}>Upcoming Events</Text>
             </View>
           </View>
+
           
           <View style={styles.eventsList}>
-            <View style={styles.eventItem}>
-              <View style={styles.eventInfo}>
-                <Text style={styles.eventName}>Beach Cleanup</Text>
-                <Text style={styles.eventDate}>May 15, 2023</Text>
+            {getFirstUpcomingEvent().length > 0 ? (
+              getFirstUpcomingEvent().map((event) => (
+                <View key={event.id} style={styles.eventItem}>
+                  <View style={styles.eventInfo}>
+                    <Text style={styles.eventName}>{event.title}</Text>
+                    <Text style={styles.eventDate}>{event.date}</Text>
+                  </View>
+                  <View style={[styles.volunteerTag, { backgroundColor: '#DBEAFE' }]}>
+                    <Text style={[styles.volunteerText, { color: '#3B82F6' }]}>
+                      {event.maxParticipants || 'TBD'} volunteers joined
+                    </Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.eventItem}>
+                <View style={styles.eventInfo}>
+                  <Text style={styles.eventName}>No upcoming events</Text>
+                  <Text style={styles.eventDate}>Create your first event!</Text>
+                </View>
               </View>
-              <View style={[styles.volunteerTag, { backgroundColor: '#DBEAFE' }]}>
-                <Text style={[styles.volunteerText, { color: '#3B82F6' }]}>12 volunteers</Text>
-              </View>
-            </View>
-            
-            <View style={styles.eventItem}>
-              <View style={styles.eventInfo}>
-                <Text style={styles.eventName}>Food Drive</Text>
-                <Text style={styles.eventDate}>May 22, 2023</Text>
-              </View>
-              <View style={[styles.volunteerTag, { backgroundColor: '#DBEAFE' }]}>
-                <Text style={[styles.volunteerText, { color: '#3B82F6' }]}>8 volunteers</Text>
-              </View>
-            </View>
-            
-            <View style={styles.eventItem}>
-              <View style={styles.eventInfo}>
-                <Text style={styles.eventName}>Tree Planting</Text>
-                <Text style={styles.eventDate}>June 5, 2023</Text>
-              </View>
-              <View style={[styles.volunteerTag, { backgroundColor: '#DBEAFE' }]}>
-                <Text style={[styles.volunteerText, { color: '#3B82F6' }]}>20 volunteers</Text>
-              </View>
-            </View>
+            )}
           </View>
           
           <TouchableOpacity style={styles.viewAllLink} onPress={handleViewAllEvents}>
@@ -241,24 +315,24 @@ export default function OrganizationDashboard() {
           </View>
           
           <View style={styles.metricsGrid}>
+            <View style={[styles.metricCard, { backgroundColor: '#FEF3C7' }]}>
+              <Text style={styles.metricValue}>{getEventStats().completedEvents}</Text>
+              <Text style={styles.metricLabel}>Completed Events</Text>
+            </View>
+            
             <View style={[styles.metricCard, { backgroundColor: '#D1FAE5' }]}>
-              <Text style={styles.metricValue}>247</Text>
-              <Text style={styles.metricLabel}>Total Volunteers</Text>
+              <Text style={styles.metricValue}>{getEventStats().upcomingEvents}</Text>
+              <Text style={styles.metricLabel}>Upcoming Events</Text>
             </View>
             
             <View style={[styles.metricCard, { backgroundColor: '#DBEAFE' }]}>
-              <Text style={styles.metricValue}>1,358</Text>
-              <Text style={styles.metricLabel}>Hours Served</Text>
+              <Text style={styles.metricValue}>{getEventStats().eventsThisMonth}</Text>
+              <Text style={styles.metricLabel}>Events This Month</Text>
             </View>
             
             <View style={[styles.metricCard, { backgroundColor: '#E9D5FF' }]}>
-              <Text style={styles.metricValue}>$5,280</Text>
-              <Text style={styles.metricLabel}>Funds Raised</Text>
-            </View>
-            
-            <View style={[styles.metricCard, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={styles.metricValue}>12</Text>
-              <Text style={styles.metricLabel}>Events Completed</Text>
+              <Text style={styles.metricValue}>{createdEvents.length}</Text>
+              <Text style={styles.metricLabel}>Total Events</Text>
             </View>
           </View>
         </View>
@@ -345,6 +419,111 @@ export default function OrganizationDashboard() {
           </View>
         </View>
       </ScrollView>
+
+      {/* View All Events Modal */}
+      <Modal
+        visible={showViewAllModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowViewAllModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>All Events</Text>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowViewAllModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            {isLoadingEvents ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading events...</Text>
+              </View>
+            ) : createdEvents.length > 0 ? (
+              createdEvents
+                .sort((a, b) => {
+                  // Sort by date (upcoming first)
+                  const [monthA, dayA, yearA] = a.date.split('/').map(Number);
+                  const [monthB, dayB, yearB] = b.date.split('/').map(Number);
+                  const dateA = new Date(yearA, monthA - 1, dayA);
+                  const dateB = new Date(yearB, monthB - 1, dayB);
+                  return dateA.getTime() - dateB.getTime();
+                })
+                .map((event, index) => {
+                  const [month, day, year] = event.date.split('/').map(Number);
+                  const eventDate = new Date(year, month - 1, day);
+                  const now = new Date();
+                  now.setHours(0, 0, 0, 0);
+                  eventDate.setHours(0, 0, 0, 0);
+                  const isUpcoming = eventDate >= now;
+                  
+                  return (
+                    <View key={event.id || index} style={styles.eventCard}>
+                      <View style={styles.eventHeader}>
+                        <View style={styles.modalEventInfo}>
+                          <Text style={styles.modalEventName}>{event.title}</Text>
+                          <Text style={styles.modalEventDate}>{event.date}</Text>
+                          <Text style={styles.eventTime}>{event.time} - {event.endTime}</Text>
+                        </View>
+                        <View style={[
+                          styles.statusTag, 
+                          { backgroundColor: isUpcoming ? '#D1FAE5' : '#FEF3C7' }
+                        ]}>
+                          <Text style={[
+                            styles.statusText, 
+                            { color: isUpcoming ? '#10B981' : '#F59E0B' }
+                          ]}>
+                            {isUpcoming ? 'Upcoming' : 'Completed'}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.eventDetails}>
+                        <View style={styles.eventDetailRow}>
+                          <Ionicons name="location-outline" size={16} color="#6B7280" />
+                          <Text style={styles.eventDetailText}>{event.location}</Text>
+                        </View>
+                        <View style={styles.eventDetailRow}>
+                          <Ionicons name="people-outline" size={16} color="#6B7280" />
+                          <Text style={styles.eventDetailText}>Max {event.maxParticipants} volunteers</Text>
+                        </View>
+                        <View style={styles.eventDetailRow}>
+                          <Ionicons name="heart-outline" size={16} color="#6B7280" />
+                          <Text style={styles.eventDetailText}>{event.cause}</Text>
+                        </View>
+                        {event.skills && (
+                          <View style={styles.eventDetailRow}>
+                            <Ionicons name="construct-outline" size={16} color="#6B7280" />
+                            <Text style={styles.eventDetailText}>{event.skills}</Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      {event.description && (
+                        <Text style={styles.eventDescription} numberOfLines={3}>
+                          {event.description}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })
+            ) : (
+              <View style={styles.noEventsContainer}>
+                <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+                <Text style={styles.noEventsTitle}>No Events Yet</Text>
+                <Text style={styles.noEventsSubtext}>
+                  Create your first event to get started
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -354,7 +533,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  header: {
+  dashboardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -362,47 +541,10 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     backgroundColor: '#FFFFFF',
   },
-  menuButton: {
-    padding: 8,
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 12,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchPlaceholder: {
-    color: '#6B7280',
-    fontSize: 14,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#111827',
-  },
-  createEventButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  createEventText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
   section: {
     backgroundColor: '#FFFFFF',
@@ -620,21 +762,134 @@ const styles = StyleSheet.create({
   activeMenuItemText: {
     color: '#3B82F6',
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconButton: {
-    padding: 8,
-  },
-  profileButton: {
-    padding: 4,
-  },
   scrollView: {
     flex: 1,
   },
   titleSection: {
     flex: 1,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  eventCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  modalEventInfo: {
+    flex: 1,
+  },
+  modalEventName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  modalEventDate: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  eventTime: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  statusTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  eventDetails: {
+    marginBottom: 12,
+  },
+  eventDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  eventDetailText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 8,
+    flex: 1,
+  },
+  eventDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  noEventsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  noEventsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noEventsSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

@@ -1,15 +1,17 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ProfileDropdownProps {
   iconSize?: number;
   iconColor?: string;
+  showMenuButton?: boolean;
+  onMenuPress?: () => void;
 }
 
-const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151" }: ProfileDropdownProps) => {
+const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton = false, onMenuPress }: ProfileDropdownProps) => {
   const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(false);
   const { logout } = useAuth();
@@ -29,39 +31,70 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151" }: ProfileDropdo
     console.log('Logout pressed');
   };
 
-  const handleSettings = () => {
-    setShowDropdown(false);
-    console.log('Settings pressed');
-    // Navigate to settings page
-  };
 
   return (
-    <View style={styles.profileContainer}>
-      <TouchableOpacity
-        style={styles.profileButton}
-        accessibilityRole="button"
-        accessibilityLabel="View profile options"
-        onPress={handleProfilePress}
-      >
-        <Ionicons name="person-circle-outline" size={iconSize} color={iconColor} />
-      </TouchableOpacity>
+    <View style={styles.headerBar}>
+      <View style={styles.headerLeft}>
+        {showMenuButton && (
+          <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
+            <Ionicons name="menu" size={24} color="#1E40AF" />
+          </TouchableOpacity>
+        )}
+        <Image
+          source={require('../assets/images/react-logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessible
+          accessibilityLabel="VOLUNTECH logo"
+        />
+        <Text style={styles.brand}>VOLUNTECH</Text>
+      </View>
+      <View style={styles.profileContainer}>
+        <TouchableOpacity
+          style={styles.notificationIcon}
+          accessibilityRole="button"
+          accessibilityLabel="View notifications"
+          onPress={() => {
+            console.log('Notifications pressed')
+            router.push('/notification')
+          }}
+        >
+          <Ionicons name="notifications-outline" size={32} color="#111827" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="View profile options"
+          onPress={handleProfilePress}
+        >
+          <Ionicons name="person-circle" size={32} color="#111827" />
+        </TouchableOpacity>
 
-      {showDropdown && (
-        <View style={styles.dropdown}>
-          <TouchableOpacity style={styles.dropdownItem} onPress={handleMyProfile}>
-            <Ionicons name="person-outline" size={20} color="#374151" />
-            <Text style={styles.dropdownText}>My Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem} onPress={handleSettings}>
-            <Ionicons name="settings-outline" size={20} color="#374151" />
-            <Text style={styles.dropdownText}>Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={[styles.dropdownText, styles.logoutText]}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        {showDropdown && (
+          <Modal
+            visible={showDropdown}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowDropdown(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowDropdown(false)}
+            >
+              <View style={styles.modalDropdown}>
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleMyProfile}>
+                  <Ionicons name="person-outline" size={20} color="#374151" />
+                  <Text style={styles.dropdownText}>My Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
+                  <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                  <Text style={[styles.dropdownText, styles.logoutText]}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        )}
+      </View>
     </View>
   );
 };
@@ -69,15 +102,46 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151" }: ProfileDropdo
 export default ProfileDropdown;
 
 const styles = StyleSheet.create({
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  menuButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  logo: { 
+    width: 28, 
+    height: 28 
+  },
+  brand: { 
+    fontSize: 12, 
+    letterSpacing: 1, 
+    color: '#0F172A', 
+    fontWeight: '700' 
+  },
   profileContainer: {
     position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  profileButton: {
-    padding: 4,
+  notificationIcon: {
+    // Remove absolute positioning, let flexbox handle it
   },
   dropdown: {
     position: 'absolute',
-    top: 45,
+    top: 40,
     right: 0,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -87,8 +151,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-    zIndex: 1000,
+    elevation: 9999,
+    zIndex: 999999999,
     minWidth: 150,
   },
   dropdownItem: {
@@ -107,5 +171,25 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#EF4444',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 60,
+    paddingRight: 20,
+  },
+  modalDropdown: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

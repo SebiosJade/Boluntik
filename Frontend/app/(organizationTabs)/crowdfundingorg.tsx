@@ -1,8 +1,9 @@
+import ProfileDropdown from '@/components/ProfileDropdown';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Animated, Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import ProfileDropdown from '@/components/ProfileDropdown';
+import { useState } from 'react';
+import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -119,21 +120,7 @@ export default function CrowdfundingOrgScreen() {
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
-            <Ionicons name="menu" size={24} color="#374151" />
-          </TouchableOpacity>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#6B7280" style={styles.searchIcon} />
-            <Text style={styles.searchPlaceholder}>Search...</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="notifications-outline" size={24} color="#374151" />
-            </TouchableOpacity>
-            <ProfileDropdown />
-          </View>
-        </View>
+        <ProfileDropdown />
 
         {/* Main Content */}
         <View style={styles.content}>

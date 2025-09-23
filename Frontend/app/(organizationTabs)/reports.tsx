@@ -1,9 +1,8 @@
+import ProfileDropdown from '@/components/ProfileDropdown';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Animated, Dimensions, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import ProfileDropdown from '@/components/ProfileDropdown';
 
 const { width } = Dimensions.get('window');
 
@@ -132,7 +131,6 @@ export default function ReportsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
       {/* Overlay */}
       {isMenuOpen && (
         <TouchableOpacity
@@ -201,21 +199,7 @@ export default function ReportsScreen() {
       </Animated.View>
 
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
-          <Ionicons name="menu" size={24} color="#374151" />
-        </TouchableOpacity>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#6B7280" style={styles.searchIcon} />
-          <Text style={styles.searchPlaceholder}>Search reports...</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={24} color="#374151" />
-          </TouchableOpacity>
-          <ProfileDropdown />
-        </View>
-      </View>
+      <ProfileDropdown />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Main Content Header */}

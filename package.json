@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "VolunTech - Volunteer Management Platform",
   "private": true,
-  
   "scripts": {
     "frontend:install": "cd Frontend && npm install",
     "frontend:start": "cd Frontend && npm start",
@@ -37,6 +36,7 @@
   "author": "VolunTech Team",
   "license": "MIT",
   "dependencies": {
-    "expo-updates": "~0.28.17"
+    "react-native-reanimated": "~3.15.4",
+    "react-native-worklets-core": "^1.6.2"
   }
 }

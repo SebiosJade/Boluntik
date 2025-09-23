@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../constants/Api';
 
 export default function SignUpScreen() {
@@ -14,6 +15,80 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Email verification states
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  // Send verification code
+  const sendVerificationCode = async () => {
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address');
+      return;
+    }
+    
+    try {
+      setSendingCode(true);
+      const res = await fetch(API.sendVerification, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message || 'Failed to send verification code');
+      }
+      
+      // Start countdown
+      setCountdown(120);
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      Alert.alert('Code Sent', 'Verification code sent to your email');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to send verification code');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  // Verify email code
+  const verifyEmailCode = async () => {
+    if (!verificationCode.trim()) {
+      Alert.alert('Code Required', 'Please enter the verification code');
+      return;
+    }
+    
+    try {
+      setVerifyingCode(true);
+      const res = await fetch(API.verifyEmail, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message || 'Invalid verification code');
+      }
+      
+      setEmailVerified(true);
+      Alert.alert('Email Verified', 'Your email has been verified successfully!');
+    } catch (e: any) {
+      Alert.alert('Verification Failed', e?.message || 'Invalid verification code');
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
 
   const onSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -24,13 +99,18 @@ export default function SignUpScreen() {
       Alert.alert('Passwords do not match', 'Please re-enter your password');
       return;
     }
+    if (!emailVerified) {
+      Alert.alert('Email Not Verified', 'Please verify your email first');
+      return;
+    }
+    
     try {
       setSubmitting(true);
       const role = isVolunteer ? 'volunteer' : 'organization';
       const res = await fetch(API.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role, verificationCode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -77,6 +157,66 @@ export default function SignUpScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Sign Up</Text>
 
+          {/* Email verification section */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Email Address</Text>
+            <View style={styles.emailContainer}>
+              <TextInput
+                style={[styles.input, styles.emailInput]}
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!emailVerified}
+              />
+              {!emailVerified && (
+                <TouchableOpacity 
+                  style={[styles.verifyButton, sendingCode && styles.buttonDisabled]} 
+                  onPress={sendVerificationCode}
+                  disabled={sendingCode || countdown > 0}
+                >
+                  <Text style={styles.verifyButtonText}>
+                    {sendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Verify'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {emailVerified && (
+              <View style={styles.verifiedEmailContainer}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                <Text style={styles.verifiedEmailText}>Email verified</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Verification code input - only show after sending code */}
+          {countdown > 0 && !emailVerified && (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Verification Code</Text>
+              <View style={styles.codeContainer}>
+                <TextInput
+                  style={[styles.input, styles.codeInput]}
+                  placeholder="Enter 6-digit code"
+                  value={verificationCode}
+                  onChangeText={setVerificationCode}
+                  keyboardType="numeric"
+                  maxLength={6}
+                />
+                <TouchableOpacity 
+                  style={[styles.verifyCodeButton, verifyingCode && styles.buttonDisabled]} 
+                  onPress={verifyEmailCode}
+                  disabled={verifyingCode || verificationCode.length !== 6}
+                >
+                  <Text style={styles.verifyCodeButtonText}>
+                    {verifyingCode ? 'Verifying...' : 'Verify'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.hintText}>Check your email for the verification code</Text>
+            </View>
+          )}
+
           {/* Role selection */}
           <View style={styles.roleSection}>
             <Text style={styles.roleLabel}>You are</Text>
@@ -106,36 +246,25 @@ export default function SignUpScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Inputs */}
+          {/* Name input */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Name</Text>
             <TextInput
               style={styles.input}
-              placeholder=""
+              placeholder="Enter your full name"
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
             />
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder=""
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
+          {/* Password inputs */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Create Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder=""
+                placeholder="Enter password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -151,7 +280,7 @@ export default function SignUpScreen() {
             <Text style={styles.fieldLabel}>Re-enter password</Text>
             <TextInput
               style={styles.input}
-              placeholder=""
+              placeholder="Confirm your password"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
@@ -159,13 +288,16 @@ export default function SignUpScreen() {
             />
           </View>
 
+          {/* Sign up button */}
           <TouchableOpacity 
-            style={styles.primaryButton} 
+            style={[styles.primaryButton, submitting && styles.buttonDisabled]} 
             activeOpacity={0.8}
             onPress={onSignup}
-            disabled={submitting}
+            disabled={submitting || !emailVerified}
           >
-            <Text style={styles.primaryButtonText}>{submitting ? 'Creating...' : 'Sign Up'}</Text>
+            <Text style={styles.primaryButtonText}>
+              {submitting ? 'Creating...' : !emailVerified ? 'Verify Email First' : 'Sign Up'}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.switchRow}>
@@ -251,6 +383,73 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emailInput: {
+    flex: 1,
+  },
+  verifyButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  verifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  codeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  codeInput: {
+    flex: 1,
+  },
+  verifyCodeButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  verifyCodeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  verifiedEmailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  verifiedEmailText: {
+    color: '#166534',
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  hintText: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
   switchRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 6 },
   switchText: { fontSize: 14, color: '#374151' },
   switchLink: { fontSize: 14, color: PRIMARY, fontWeight: '500' },

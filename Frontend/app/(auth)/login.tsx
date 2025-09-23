@@ -1,7 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../constants/Api';
 import { useAuth } from '../../contexts/AuthContext';
 export default function LoginScreen() {
@@ -10,8 +11,22 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Forgot password states
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const onLogin = async () => {
     if (!email || !password) {
@@ -30,8 +45,8 @@ export default function LoginScreen() {
         throw new Error(data?.message || 'Login failed');
       }
       
-      // Use the auth context to login
-      login(data || { email });
+      // Use the auth context to login with remember me
+      await login(data || { email }, rememberMe);
       // Show success alert
       Alert.alert(
         '🎉 Welcome Back!',
@@ -50,6 +65,154 @@ export default function LoginScreen() {
       setSubmitting(false);
     }
   };
+
+  // Forgot password functions
+  const handleForgotPassword = () => {
+    setShowForgotPasswordModal(true);
+  };
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false);
+    setForgotEmail('');
+    setResetCode('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+    setCodeVerified(false);
+    setCountdown(0);
+  };
+
+  const sendResetCode = async () => {
+    if (!forgotEmail) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    try {
+      setSendingCode(true);
+      const res = await fetch(API.forgotPassword, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data?.message || 'Failed to send reset code');
+      }
+
+      Alert.alert('Success', 'If the email exists, a reset code has been sent');
+      
+      setCountdown(600); // 10 minutes
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to send reset code');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const verifyResetCode = async () => {
+    if (!resetCode || resetCode.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit code');
+      return;
+    }
+
+    try {
+      setVerifyingCode(true);
+      const res = await fetch(API.verifyResetCode, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, code: resetCode }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data?.message || 'Invalid reset code');
+      }
+
+      setCodeVerified(true);
+      Alert.alert('Success', 'Code verified! Please enter your new password');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Invalid reset code');
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      Alert.alert('Error', 'Please enter and confirm your new password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    try {
+      setResettingPassword(true);
+      const res = await fetch(API.resetPassword, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: forgotEmail, 
+          code: resetCode, 
+          newPassword 
+        }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data?.message || 'Failed to reset password');
+      }
+
+      Alert.alert(
+        'Success', 
+        'Password reset successfully! You can now log in with your new password.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              closeForgotPasswordModal();
+            }
+          }
+        ]
+      );
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  // Show loading screen while checking stored auth
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Image source={require('../../assets/images/icon.png')} style={styles.logo} />
+          <Text style={styles.brand}>VolunTech</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -119,7 +282,7 @@ export default function LoginScreen() {
                 <Text style={styles.rememberText}>Remember me</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleForgotPassword}>
                 <Text style={styles.forgotPassword}>Forgot your password?</Text>
               </TouchableOpacity>
             </View>
@@ -161,6 +324,157 @@ export default function LoginScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotPasswordModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeForgotPasswordModal}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeForgotPasswordModal} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          <View style={styles.modalContent}>
+            {!codeVerified ? (
+              <>
+                {/* Step 1: Enter Email */}
+                <View style={styles.stepContainer}>
+                  <Text style={styles.stepTitle}>Enter your email address</Text>
+                  <Text style={styles.stepDescription}>
+                    We'll send you a verification code to reset your password
+                  </Text>
+                  
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email address"
+                      value={forgotEmail}
+                      onChangeText={setForgotEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.sendCodeButton, (!forgotEmail || sendingCode) && styles.buttonDisabled]}
+                    onPress={sendResetCode}
+                    disabled={!forgotEmail || sendingCode}
+                  >
+                    <Text style={styles.sendCodeButtonText}>
+                      {sendingCode ? 'Sending...' : 'Send Reset Code'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {countdown > 0 && (
+                    <Text style={styles.countdownText}>
+                      Code expires in {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Step 2: Enter Verification Code */}
+                {countdown > 0 && (
+                  <View style={styles.stepContainer}>
+                    <Text style={styles.stepTitle}>Enter verification code</Text>
+                    <Text style={styles.stepDescription}>
+                      Enter the 6-digit code sent to your email
+                    </Text>
+                    
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="000000"
+                        value={resetCode}
+                        onChangeText={setResetCode}
+                        keyboardType="numeric"
+                        maxLength={6}
+                      />
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.verifyButton, (resetCode.length !== 6 || verifyingCode) && styles.buttonDisabled]}
+                      onPress={verifyResetCode}
+                      disabled={resetCode.length !== 6 || verifyingCode}
+                    >
+                      <Text style={styles.verifyButtonText}>
+                        {verifyingCode ? 'Verifying...' : 'Verify Code'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
+            ) : (
+              /* Step 3: Set New Password */
+              <View style={styles.stepContainer}>
+                <Text style={styles.stepTitle}>Set new password</Text>
+                <Text style={styles.stepDescription}>
+                  Enter your new password below
+                </Text>
+                
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="New password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry={!showNewPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    <Ionicons
+                      name={showNewPassword ? "eye-off" : "eye"}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? "eye-off" : "eye"}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.resetPasswordButton, (!newPassword || !confirmPassword || resettingPassword) && styles.buttonDisabled]}
+                  onPress={resetPassword}
+                  disabled={!newPassword || !confirmPassword || resettingPassword}
+                >
+                  <Text style={styles.resetPasswordButtonText}>
+                    {resettingPassword ? 'Resetting...' : 'Reset Password'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -251,8 +565,10 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   eyeIcon: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    padding: 4,
   },
   eyeIconText: {
     fontSize: 18,
@@ -371,5 +687,106 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#3B82F6',
     fontWeight: '500',
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  placeholder: {
+    width: 40,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  stepContainer: {
+    marginBottom: 24,
+  },
+  stepTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  stepDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  sendCodeButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sendCodeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  verifyButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  verifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  resetPasswordButton: {
+    backgroundColor: '#EF4444',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  resetPasswordButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  countdownText: {
+    fontSize: 12,
+    color: '#EF4444',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 16,
   },
 });

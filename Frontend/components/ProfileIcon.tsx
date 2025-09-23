@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View, Platform, Modal } from 'react-native';
 
 interface ProfileIconProps {
     showMenuButton?: boolean;
@@ -68,16 +68,29 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
                 </TouchableOpacity>
 
                 {showDropdown && (
-                    <View style={styles.dropdown}>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={handleMyProfile}>
-                            <Ionicons name="person-outline" size={20} color="#374151" />
-                            <Text style={styles.dropdownText}>My Profile</Text>
+                    <Modal
+                        visible={showDropdown}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setShowDropdown(false)}
+                    >
+                        <TouchableOpacity 
+                            style={styles.modalOverlay}
+                            activeOpacity={1}
+                            onPress={() => setShowDropdown(false)}
+                        >
+                            <View style={styles.modalDropdown}>
+                                <TouchableOpacity style={styles.dropdownItem} onPress={handleMyProfile}>
+                                    <Ionicons name="person-outline" size={20} color="#374151" />
+                                    <Text style={styles.dropdownText}>My Profile</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
+                                    <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                                    <Text style={[styles.dropdownText, styles.logoutText]}>Logout</Text>
+                                </TouchableOpacity>
+                            </View>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
-                            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-                            <Text style={[styles.dropdownText, styles.logoutText]}>Logout</Text>
-                        </TouchableOpacity>
-                    </View>
+                    </Modal>
                 )}
             </View>
         </View>
@@ -129,8 +142,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-    zIndex: 1000,
+    elevation: 9999,
+    zIndex: 999999999,
     minWidth: 150,
   },
   dropdownItem: {
@@ -149,5 +162,25 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#EF4444',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 60,
+    paddingRight: 20,
+  },
+  modalDropdown: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 })

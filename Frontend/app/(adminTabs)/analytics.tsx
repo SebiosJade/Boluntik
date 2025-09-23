@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Animated, Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import ProfileDropdown from '@/components/ProfileDropdown';
 
 const { width } = Dimensions.get('window');
@@ -133,7 +132,6 @@ export default function PlatformWideAnalytics() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
       {/* Overlay */}
       {isMenuOpen && (
         <TouchableOpacity

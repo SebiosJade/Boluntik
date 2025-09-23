@@ -32,10 +32,34 @@ export const API_BASE_URL =
   Platform.select({ android: ANDROID_EMULATOR_HOST, ios: LOCALHOST, default: LOCALHOST });
 
 export const API = {
+  BASE_URL: API_BASE_URL,
   signup: `${API_BASE_URL}/api/auth/signup`,
   login: `${API_BASE_URL}/api/auth/login`,
   me: `${API_BASE_URL}/api/auth/me`,
   onboarding: `${API_BASE_URL}/api/auth/onboarding`,
   changePassword: `${API_BASE_URL}/api/auth/change-password`,
   deleteAccount: `${API_BASE_URL}/api/auth/account`,
+  sendVerification: `${API_BASE_URL}/api/auth/send-verification`,
+  verifyEmail: `${API_BASE_URL}/api/auth/verify-email`,
+  forgotPassword: `${API_BASE_URL}/api/auth/forgot-password`,
+  verifyResetCode: `${API_BASE_URL}/api/auth/verify-reset-code`,
+  resetPassword: `${API_BASE_URL}/api/auth/reset-password`,
+  getUserInterests: `${API_BASE_URL}/api/auth/interests`,
+  updateUserInterests: `${API_BASE_URL}/api/auth/interests`,
+  getAvailableInterests: `${API_BASE_URL}/api/auth/interests/available`,
+  // Profile management
+  getProfile: `${API_BASE_URL}/api/auth/profile`,
+  updateProfile: `${API_BASE_URL}/api/auth/profile`,
+  updateInterests: `${API_BASE_URL}/api/auth/interests`,
+  
+  // Event management
+  events: {
+    getAll: `${API_BASE_URL}/api/events`,
+    getById: (id: string) => `${API_BASE_URL}/api/events/${id}`,
+    getByOrganization: (orgId: string) => `${API_BASE_URL}/api/events/organization/${orgId}`,
+    getByUser: (userId: string) => `${API_BASE_URL}/api/events/user/${userId}`,
+    create: `${API_BASE_URL}/api/events`,
+    update: (id: string) => `${API_BASE_URL}/api/events/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/api/events/${id}`,
+  },
 };

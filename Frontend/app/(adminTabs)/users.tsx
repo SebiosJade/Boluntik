@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Animated, Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import ProfileDropdown from '@/components/ProfileDropdown';
 
 const { width } = Dimensions.get('window');
@@ -106,9 +105,8 @@ export default function UserVerificationModeration() {
 		setVerificationRequests(prev => prev.filter(u => u.id !== user.id));
 	};
 
-	  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+	return (
+		<SafeAreaView style={styles.safeArea}>
 			{/* Overlay */}
 			{isMenuOpen && <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeMenu} />}
 

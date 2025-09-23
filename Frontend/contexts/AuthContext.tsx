@@ -1,12 +1,14 @@
 import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (userData: any) => void;
+  login: (userData: any, rememberMe?: boolean) => void;
   logout: () => void;
   user: any | null;
   token: string | null;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,22 +20,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [needsOnboarding,setNeedsOnboarding] = useState(false);
   const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
 
   // Check authentication state on app start
   useEffect(() => {
-    // You can add logic here to check for stored authentication tokens
-    // For now, we'll start with no authentication
-    setIsAuthenticated(false);
-    
-    // Set navigation as ready after a short delay to ensure the navigation system is mounted
-    const timer = setTimeout(() => {
-      setIsNavigationReady(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    checkStoredAuth();
   }, []);
+
+  const checkStoredAuth = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('auth_token');
+      const storedUser = await AsyncStorage.getItem('auth_user');
+      const storedRememberMe = await AsyncStorage.getItem('remember_me');
+      
+      if (storedToken && storedUser && storedRememberMe === 'true') {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setToken(storedToken);
+        setIsAuthenticated(true);
+        setIsFirstTime(false);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error('Error checking stored auth:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+      // Set navigation as ready after checking auth
+      const timer = setTimeout(() => {
+        setIsNavigationReady(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  };
 
   // Handle authentication state changes
   useEffect(() => {
@@ -55,26 +78,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, segments, isNavigationReady]);
 
-  const login = (userData: any) => {
+  const login = async (userData: any, rememberMe: boolean = false) => {
     setUser(userData.user);
     setToken(userData.token);
     setNeedsOnboarding(userData.needsOnboarding);
     setIsAuthenticated(true);
     setIsFirstTime(false);
+
+    // Store auth data if remember me is checked
+    if (rememberMe) {
+      try {
+        await AsyncStorage.setItem('auth_token', userData.token);
+        await AsyncStorage.setItem('auth_user', JSON.stringify(userData.user));
+        await AsyncStorage.setItem('remember_me', 'true');
+      } catch (error) {
+        console.error('Error storing auth data:', error);
+      }
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
-    // Clear any stored tokens here
+    
+    // Clear stored auth data
+    try {
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('auth_user');
+      await AsyncStorage.removeItem('remember_me');
+    } catch (error) {
+      console.error('Error clearing auth data:', error);
+    }
+    
     if (isNavigationReady) {
       router.replace('/(auth)/login');
     }
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, user, token }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user, token, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
