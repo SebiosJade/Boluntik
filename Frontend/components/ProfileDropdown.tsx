@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ProfileDropdownProps {
   iconSize?: number;
@@ -27,8 +27,25 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
 
   const handleLogout = () => {
     setShowDropdown(false);
-    logout();
-    console.log('Logout pressed');
+    
+    Alert.alert(
+      'Logout Confirmation',
+      'Are you sure you want to logout? You will need to sign in again to access your account.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            logout();
+            console.log('Logout confirmed and executed');
+          },
+        },
+      ]
+    );
   };
 
 

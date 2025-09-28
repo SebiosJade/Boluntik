@@ -1,19 +1,31 @@
 import ProfileDropdown from '@/components/ProfileDropdown';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../contexts/AuthContext';
+import { Event, eventService } from '../../services/eventService';
 
 const { width } = Dimensions.get('window');
 
 export default function VolunteersScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-width));
   const [activeTab, setActiveTab] = useState('upcoming');
   const [searchText, setSearchText] = useState('');
   const [selectedVolunteers, setSelectedVolunteers] = useState<number[]>([]);
+  
+  // Real data state
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [completedEvents, setCompletedEvents] = useState<Event[]>([]);
+  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [eventFilter, setEventFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
   const toggleMenu = () => {
     if (isMenuOpen) {
@@ -50,57 +62,118 @@ export default function VolunteersScreen() {
     { id: 'impact', title: 'Impact Tracker', icon: 'trending-up-outline' },
   ];
 
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: 'Beach Cleanup',
-      status: 'Open',
-      date: 'May 15, 2023 • 9:00 AM - 12:00 PM',
-      location: 'Main Beach',
-      volunteers: 12,
-    },
-    {
-      id: 2,
-      title: 'Food Drive',
-      status: 'Open',
-      date: 'May 22, 2023 • 10:00 AM - 2:00 PM',
-      location: 'Community Center',
-      volunteers: 8,
-    },
-  ];
+  // Load organization's events
+  const loadOrganizationEvents = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const events = await eventService.getEventsByOrganization(user.id);
+      setAllEvents(events);
+      
+      // Categorize events by status and date
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      const upcomingEventsData = events.filter(event => {
+        if (event.status === 'Completed') return false;
+        
+        // Parse MM/DD/YYYY format
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        eventDate.setHours(0, 0, 0, 0);
+        
+        return eventDate >= now;
+      });
+      
+      const completedEventsData = events.filter(event => {
+        if (event.status === 'Completed') return true;
+        
+        // Parse MM/DD/YYYY format
+        const [month, day, year] = event.date.split('/').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        eventDate.setHours(0, 0, 0, 0);
+        
+        return eventDate < now;
+      });
+      
+      setUpcomingEvents(upcomingEventsData);
+      setCompletedEvents(completedEventsData);
+      
+      // For now, we'll create a mock volunteer list
+      // In a real implementation, you'd fetch volunteers from the backend
+      const mockVolunteers = [
+        {
+          id: 1,
+          name: 'John Doe',
+          email: 'john@example.com',
+          phone: '555-123-4567',
+          joinedEvents: 3,
+          totalHours: 24,
+        },
+        {
+          id: 2,
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          phone: '555-234-5678',
+          joinedEvents: 5,
+          totalHours: 40,
+        },
+        {
+          id: 3,
+          name: 'Michael Johnson',
+          email: 'michael@example.com',
+          phone: '555-345-6789',
+          joinedEvents: 2,
+          totalHours: 16,
+        },
+        {
+          id: 4,
+          name: 'Emily Wilson',
+          email: 'emily@example.com',
+          phone: '555-456-7890',
+          joinedEvents: 4,
+          totalHours: 32,
+        },
+        {
+          id: 5,
+          name: 'Robert Brown',
+          email: 'robert@example.com',
+          phone: '555-567-8901',
+          joinedEvents: 1,
+          totalHours: 8,
+        },
+      ];
+      
+      setVolunteers(mockVolunteers);
+      
+    } catch (error) {
+      console.error('Error loading organization events:', error);
+      setError('Failed to load events');
+      Alert.alert('Error', 'Failed to load events. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const volunteers = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '555-123-4567',
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '555-234-5678',
-    },
-    {
-      id: 3,
-      name: 'Michael Johnson',
-      email: 'michael@example.com',
-      phone: '555-345-6789',
-    },
-    {
-      id: 4,
-      name: 'Emily Wilson',
-      email: 'emily@example.com',
-      phone: '555-456-7890',
-    },
-    {
-      id: 5,
-      name: 'Robert Brown',
-      email: 'robert@example.com',
-      phone: '555-567-8901',
-    },
-  ];
+  // Get filtered events based on current filter
+  const getFilteredEvents = () => {
+    switch (eventFilter) {
+      case 'upcoming':
+        return upcomingEvents;
+      case 'completed':
+        return completedEvents;
+      default:
+        return allEvents;
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadOrganizationEvents();
+  }, [user?.id]);
 
   const handleInviteVolunteers = () => {
     console.log('Invite Volunteers pressed');
@@ -117,12 +190,12 @@ export default function VolunteersScreen() {
     // Open message modal
   };
 
-  const handleManageVolunteers = (eventId: number) => {
+  const handleManageVolunteers = (eventId: string) => {
     console.log(`Manage volunteers for event ${eventId}`);
     // Navigate to manage volunteers screen
   };
 
-  const handleEmailEvent = (eventId: number) => {
+  const handleEmailEvent = (eventId: string) => {
     console.log(`Email event ${eventId}`);
     // Open email modal
   };
@@ -213,7 +286,7 @@ export default function VolunteersScreen() {
       </Animated.View>
 
       {/* Header */}
-      <ProfileDropdown />
+      <ProfileDropdown showMenuButton={true} onMenuPress={toggleMenu} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Main Content Header */}
@@ -264,54 +337,105 @@ export default function VolunteersScreen() {
                 <Ionicons name="search" size={20} color="#6B7280" style={styles.eventSearchIcon} />
                 <Text style={styles.eventSearchPlaceholder}>Search events...</Text>
               </View>
-              <TouchableOpacity style={styles.filterButton} onPress={handleFilter}>
-                <Ionicons name="filter" size={16} color="#6B7280" />
-                <Text style={styles.filterButtonText}>Filter</Text>
+            </View>
+
+            {/* Event Filter Buttons */}
+            <View style={styles.eventFilterContainer}>
+              <TouchableOpacity 
+                style={[styles.eventFilterButton, eventFilter === 'all' && styles.eventFilterButtonActive]}
+                onPress={() => setEventFilter('all')}
+              >
+                <Text style={[styles.eventFilterText, eventFilter === 'all' && styles.eventFilterTextActive]}>
+                  All Events ({allEvents.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.eventFilterButton, eventFilter === 'upcoming' && styles.eventFilterButtonActive]}
+                onPress={() => setEventFilter('upcoming')}
+              >
+                <Text style={[styles.eventFilterText, eventFilter === 'upcoming' && styles.eventFilterTextActive]}>
+                  Upcoming ({upcomingEvents.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.eventFilterButton, eventFilter === 'completed' && styles.eventFilterButtonActive]}
+                onPress={() => setEventFilter('completed')}
+              >
+                <Text style={[styles.eventFilterText, eventFilter === 'completed' && styles.eventFilterTextActive]}>
+                  Completed ({completedEvents.length})
+                </Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.eventsList}>
-              {upcomingEvents.map((event) => (
-                <View key={event.id} style={styles.eventCard}>
-                  <View style={styles.eventHeader}>
-                    <Text style={styles.eventTitle}>{event.title}</Text>
-                    <View style={styles.statusTag}>
-                      <Text style={styles.statusText}>{event.status}</Text>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading events...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={loadOrganizationEvents}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : getFilteredEvents().length > 0 ? (
+              <View style={styles.eventsList}>
+                {getFilteredEvents().map((event) => (
+                  <View key={event.id} style={styles.eventCard}>
+                    <View style={styles.eventHeader}>
+                      <Text style={styles.eventTitle}>{event.title}</Text>
+                      <View style={styles.statusTag}>
+                        <Text style={styles.statusText}>{event.status || 'Open'}</Text>
+                      </View>
                     </View>
-                  </View>
-                  
-                  <View style={styles.eventDetails}>
-                    <View style={styles.eventDetail}>
-                      <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-                      <Text style={styles.eventDetailText}>{event.date}</Text>
+                    
+                    <View style={styles.eventDetails}>
+                      <View style={styles.eventDetail}>
+                        <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                        <Text style={styles.eventDetailText}>{event.date} • {event.time} - {event.endTime}</Text>
+                      </View>
+                      <View style={styles.eventDetail}>
+                        <Ionicons name="location-outline" size={16} color="#6B7280" />
+                        <Text style={styles.eventDetailText}>{event.location}</Text>
+                      </View>
+                      <View style={styles.eventDetail}>
+                        <Ionicons name="people-outline" size={16} color="#6B7280" />
+                        <Text style={styles.eventDetailText}>{event.actualParticipants || 0} volunteers signed up</Text>
+                      </View>
                     </View>
-                    <View style={styles.eventDetail}>
-                      <Ionicons name="location-outline" size={16} color="#6B7280" />
-                      <Text style={styles.eventDetailText}>{event.location}</Text>
-                    </View>
-                    <View style={styles.eventDetail}>
-                      <Ionicons name="people-outline" size={16} color="#6B7280" />
-                      <Text style={styles.eventDetailText}>{event.volunteers} volunteers signed up</Text>
-                    </View>
-                  </View>
 
-                  <View style={styles.eventActions}>
-                    <TouchableOpacity 
-                      style={styles.manageButton}
-                      onPress={() => handleManageVolunteers(event.id)}
-                    >
-                      <Text style={styles.manageButtonText}>Manage Volunteers</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.emailButton}
-                      onPress={() => handleEmailEvent(event.id)}
-                    >
-                      <Ionicons name="mail-outline" size={20} color="#6B7280" />
-                    </TouchableOpacity>
+                    <View style={styles.eventActions}>
+                      <TouchableOpacity 
+                        style={styles.manageButton}
+                        onPress={() => handleManageVolunteers(event.id)}
+                      >
+                        <Text style={styles.manageButtonText}>Manage Volunteers</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.emailButton}
+                        onPress={() => handleEmailEvent(event.id)}
+                      >
+                        <Ionicons name="mail-outline" size={20} color="#6B7280" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+                <Text style={styles.emptyTitle}>
+                  {eventFilter === 'upcoming' ? 'No Upcoming Events' : 
+                   eventFilter === 'completed' ? 'No Completed Events' : 
+                   'No Events Found'}
+                </Text>
+                <Text style={styles.emptySubtext}>
+                  {eventFilter === 'all' ? 'Create your first event to start managing volunteers' :
+                   eventFilter === 'upcoming' ? 'All your events have been completed or are in the past' :
+                   'Complete some events to see them here'}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -788,5 +912,89 @@ const styles = StyleSheet.create({
   },
   activeMenuItemText: {
     color: '#3B82F6',
+  },
+  
+  // Loading, error, and empty states
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  
+  // Event filter styles
+  eventFilterContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 4,
+  },
+  eventFilterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  eventFilterButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  eventFilterText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  eventFilterTextActive: {
+    color: '#3B82F6',
+    fontWeight: '600',
   },
 });

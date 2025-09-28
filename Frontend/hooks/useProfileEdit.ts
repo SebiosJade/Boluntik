@@ -128,6 +128,21 @@ export const useProfileEdit = () => {
     setIsEditing(true);
 
     try {
+      const profileData = {
+        name: formData.name.trim(),
+        bio: formData.bio.trim(),
+        phone: formData.phone.trim(),
+        location: formData.location.trim(),
+        skills: formData.skills,
+        availability: formData.availability
+      };
+      
+      console.log('=== FRONTEND PROFILE UPDATE DEBUG ===');
+      console.log('Sending profile data:', JSON.stringify(profileData, null, 2));
+      console.log('Skills type:', typeof profileData.skills, 'Length:', profileData.skills?.length);
+      console.log('Availability type:', typeof profileData.availability, 'Length:', profileData.availability?.length);
+      console.log('Location value:', `"${profileData.location}"`, 'Length:', profileData.location.length);
+      
       // Update profile information
       const profileResponse = await fetch(API.updateProfile, {
         method: 'PATCH',
@@ -135,14 +150,7 @@ export const useProfileEdit = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          bio: formData.bio.trim(),
-          phone: formData.phone.trim(),
-          location: formData.location.trim(),
-          skills: formData.skills,
-          availability: formData.availability
-        }),
+        body: JSON.stringify(profileData),
       });
 
       // Update interests separately
@@ -172,9 +180,20 @@ export const useProfileEdit = () => {
           ]
         );
       } else {
+        console.log('=== PROFILE UPDATE ERROR ===');
+        console.log('Profile response status:', profileResponse.status);
+        console.log('Interests response status:', interestsResponse.status);
+        
         const profileError = await profileResponse.json();
         const interestsError = await interestsResponse.json();
-        Alert.alert('Error', profileError.message || interestsError.message || 'Failed to update profile');
+        
+        console.log('Profile error:', profileError);
+        console.log('Interests error:', interestsError);
+        
+        const errorMessage = profileError.message || interestsError.message || 'Failed to update profile';
+        console.log('Final error message:', errorMessage);
+        
+        Alert.alert('Error', errorMessage);
       }
     } catch (error) {
       console.error('Update profile error:', error);

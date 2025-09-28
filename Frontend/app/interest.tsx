@@ -1,10 +1,10 @@
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../contexts/AuthContext';
 import { API } from '../constants/Api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function InterestScreen() {
   const router = useRouter();
@@ -77,10 +77,27 @@ export default function InterestScreen() {
   };
 
   const handleContinue = async () => {
+    console.log('=== CONTINUE BUTTON DEBUG ===');
+    console.log('Selected interests:', selectedInterests);
+    console.log('Number of interests selected:', selectedInterests.length);
+    
+    // Check if user has selected at least one interest
+    if (selectedInterests.length === 0) {
+      console.log('ERROR: No interests selected');
+      Alert.alert(
+        'No Interests Selected',
+        'Please select at least one interest to continue, or click Skip to proceed without selecting interests.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     try {
       setIsLoading(true);
       
-      // Save selected interests to backend
+      console.log('Saving interests and setting onboarding to true...');
+      
+      // Save selected interests to backend and set onboarding to true
       const response = await fetch(API.updateUserInterests, {
         method: 'PUT',
         headers: {
@@ -95,6 +112,8 @@ export default function InterestScreen() {
         throw new Error(errorData.message || 'Failed to save interests');
       }
 
+      console.log('Interests saved successfully, onboarding set to true');
+      
       // Show success message
       Alert.alert(
         'Success!',
@@ -117,6 +136,7 @@ export default function InterestScreen() {
         ]
       );
     } catch (error: any) {
+      console.error('Error saving interests:', error);
       Alert.alert('Error', error?.message || 'Failed to save interests. Please try again.');
     } finally {
       setIsLoading(false);
@@ -124,7 +144,12 @@ export default function InterestScreen() {
   };
 
   const handleSkip = async () => {
+    console.log('=== SKIP BUTTON DEBUG ===');
+    console.log('User clicked skip - setting onboarding to false');
+    
     try {
+      setIsLoading(true);
+      
       // Update onboarding status to false when skipping
       const response = await fetch(API.onboarding, {
         method: 'PATCH',
@@ -136,15 +161,45 @@ export default function InterestScreen() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update onboarding status');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update onboarding status');
       }
 
-      // Navigate to appropriate dashboard
-      handleContinue();
+      console.log('Onboarding status set to false successfully');
+      
+      // Navigate to appropriate dashboard without requiring interests
+      console.log('Navigating to dashboard...');
+      if (user?.role === 'organization') {
+        router.replace('/organization');
+      } else if (user?.role === 'admin') {
+        router.replace('/admin');
+      } else {
+        // Default to volunteer dashboard
+        router.replace('/volunteer');
+      }
     } catch (error) {
       console.error('Error updating onboarding status:', error);
-      // Still navigate even if API call fails
-      handleContinue();
+      Alert.alert(
+        'Navigation Error', 
+        'Failed to update settings, but you can still continue.',
+        [
+          {
+            text: 'Continue Anyway',
+            onPress: () => {
+              // Still navigate even if API call fails
+              if (user?.role === 'organization') {
+                router.replace('/organization');
+              } else if (user?.role === 'admin') {
+                router.replace('/admin');
+              } else {
+                router.replace('/volunteer');
+              }
+            }
+          }
+        ]
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -12,15 +12,7 @@ import { useProfileEdit } from '../hooks/useProfileEdit';
 import { deleteAvatar, uploadAvatar } from '../services/avatarService';
 import { Event, eventService } from '../services/eventService';
 
-// Constants
-const BADGES = [
-    { id: 1, name: 'First Responder', icon: 'shield-checkmark', color: '#EF4444' },
-    { id: 2, name: 'Community Leader', icon: 'people', color: '#3B82F6' },
-    { id: 3, name: 'Long-term Volunteer', icon: 'time', color: '#10B981' },
-    { id: 4, name: 'Training Champion', icon: 'school', color: '#8B5CF6' },
-    { id: 5, name: 'Emergency Ready', icon: 'warning', color: '#F59E0B' },
-    { id: 6, name: 'Team Player', icon: 'person-add', color: '#06B6D4' }
-  ];
+// Constants - Removed hardcoded BADGES as we now use dynamic badges based on user data
 
 const INTEREST_DISPLAY_MAP: { [key: string]: string } = {
   'community': 'Community Services',
@@ -116,7 +108,14 @@ export default function MyProfileScreen() {
 
   // Load completed events based on user role
   const loadCompletedEvents = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('ERROR: No user ID available for loading events');
+      return;
+    }
+    
+    console.log('=== LOADING USER EVENTS DEBUG ===');
+    console.log('User ID:', user.id);
+    console.log('User role:', user.role);
     
     setIsLoadingEvents(true);
     try {
@@ -124,13 +123,15 @@ export default function MyProfileScreen() {
       
       if (user.role === 'organization') {
         // For organizers: get ALL events they created (both completed and upcoming)
+        console.log('Loading events for organization:', user.id);
         events = await eventService.getEventsByOrganization(user.id);
         setTotalEvents(events); // Store all events for metrics
+        console.log('Organization events loaded:', events.length);
       } else {
-        // For volunteers: get events they joined that are completed
-        // Note: This would need a new API endpoint for volunteer events
-        // For now, we'll use all events and filter by status
-        events = await eventService.getAllEvents();
+        // For volunteers: get events they actually joined
+        console.log('Loading joined events for volunteer:', user.id);
+        events = await eventService.getUserJoinedEvents(user.id);
+        console.log('Volunteer joined events loaded:', events.length);
       }
       
       // Filter for completed events (status === 'Completed' or date is in the past)
@@ -786,19 +787,30 @@ export default function MyProfileScreen() {
     setIsChangingPassword(true);
     
     try {
+      const passwordData = {
+        currentPassword,
+        newPassword,
+      };
+      
+      console.log('=== FRONTEND CHANGE PASSWORD DEBUG ===');
+      console.log('Sending password change data:', {
+        currentPasswordLength: currentPassword.length,
+        newPasswordLength: newPassword.length,
+        hasToken: !!token
+      });
+      
       const response = await fetch(API.changePassword, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
+        body: JSON.stringify(passwordData),
       });
 
+      console.log('Password change response status:', response.status);
       const data = await response.json();
+      console.log('Password change response data:', data);
 
       if (response.ok) {
         Alert.alert(
@@ -814,6 +826,7 @@ export default function MyProfileScreen() {
           ]
         );
       } else {
+        console.log('Password change failed:', data);
         Alert.alert('Error', data.message || 'Failed to change password');
       }
     } catch (error) {
@@ -1045,7 +1058,7 @@ export default function MyProfileScreen() {
           <Text style={styles.sectionTitle}>Badges Earned</Text>
           <View style={styles.badgesGrid}>
             {(() => {
-              // Calculate badge achievements based on real data
+              // Calculate badge achievements based on USER-SPECIFIC data
               const hasFirstTimer = completedEvents.length >= 1;
               const hasHelpingHand = totalHours >= 10;
               const hasCommunityHero = organizationsHelped >= 5;
@@ -1057,54 +1070,81 @@ export default function MyProfileScreen() {
               );
               const hasTeamPlayer = completedEvents.length >= 5;
 
+              console.log('=== BADGE CALCULATION DEBUG ===');
+              console.log('User-specific data:', {
+                userId: user?.id,
+                userRole: user?.role,
+                completedEventsCount: completedEvents.length,
+                totalHours,
+                organizationsHelped,
+                hasFirstTimer,
+                hasHelpingHand,
+                hasCommunityHero,
+                hasLongTermVolunteer,
+                hasEmergencyReady,
+                hasTeamPlayer
+              });
+
               const dynamicBadges = [
                 {
                   id: 1,
-                  name: 'First Timer',
+                  name: user?.role === 'organization' ? 'Event Creator' : 'First Timer',
                   icon: 'sparkles',
                   color: hasFirstTimer ? '#F59E0B' : '#9CA3AF',
                   earned: hasFirstTimer,
-                  description: hasFirstTimer ? 'Completed your first volunteer event' : 'Complete your first event'
+                  description: hasFirstTimer 
+                    ? (user?.role === 'organization' ? 'Created your first event' : 'Completed your first volunteer event')
+                    : (user?.role === 'organization' ? 'Create your first event' : 'Complete your first event')
                 },
                 {
                   id: 2,
-                  name: 'Helping Hand',
-                  icon: 'hand-heart',
+                  name: user?.role === 'organization' ? 'Time Manager' : 'Helping Hand',
+                  icon: 'heart',
                   color: hasHelpingHand ? '#F59E0B' : '#9CA3AF',
                   earned: hasHelpingHand,
-                  description: hasHelpingHand ? `Volunteered for ${totalHours}+ hours` : 'Volunteer for 10+ hours'
+                  description: hasHelpingHand 
+                    ? (user?.role === 'organization' ? `Organized ${totalHours}+ hours of events` : `Volunteered for ${totalHours}+ hours`)
+                    : (user?.role === 'organization' ? 'Organize 10+ hours of events' : 'Volunteer for 10+ hours')
                 },
                 {
                   id: 3,
-                  name: 'Community Hero',
+                  name: user?.role === 'organization' ? 'Volunteer Magnet' : 'Community Hero',
                   icon: 'people',
                   color: hasCommunityHero ? '#3B82F6' : '#9CA3AF',
                   earned: hasCommunityHero,
-                  description: hasCommunityHero ? `Supported ${organizationsHelped}+ organizations` : 'Support 5+ organizations'
+                  description: hasCommunityHero 
+                    ? (user?.role === 'organization' ? `Attracted ${organizationsHelped}+ volunteers` : `Supported ${organizationsHelped}+ organizations`)
+                    : (user?.role === 'organization' ? 'Attract 5+ volunteers' : 'Support 5+ organizations')
                 },
                 {
                   id: 4,
-                  name: 'Long-term Volunteer',
+                  name: user?.role === 'organization' ? 'Event Master' : 'Long-term Volunteer',
                   icon: 'time',
                   color: hasLongTermVolunteer ? '#10B981' : '#9CA3AF',
                   earned: hasLongTermVolunteer,
-                  description: hasLongTermVolunteer ? `Completed ${completedEvents.length}+ events` : 'Complete 10+ events'
+                  description: hasLongTermVolunteer 
+                    ? (user?.role === 'organization' ? `Created ${completedEvents.length}+ events` : `Completed ${completedEvents.length}+ events`)
+                    : (user?.role === 'organization' ? 'Create 10+ events' : 'Complete 10+ events')
                 },
                 {
                   id: 5,
-                  name: 'Emergency Ready',
+                  name: user?.role === 'organization' ? 'Crisis Coordinator' : 'Emergency Ready',
                   icon: 'warning',
                   color: hasEmergencyReady ? '#EF4444' : '#9CA3AF',
                   earned: hasEmergencyReady,
-                  description: hasEmergencyReady ? 'Helped in emergency/disaster relief' : 'Help in emergency events'
+                  description: hasEmergencyReady 
+                    ? (user?.role === 'organization' ? 'Organized emergency/disaster relief events' : 'Helped in emergency/disaster relief')
+                    : (user?.role === 'organization' ? 'Organize emergency events' : 'Help in emergency events')
                 },
                 {
                   id: 6,
-                  name: 'Team Player',
+                  name: user?.role === 'organization' ? 'Community Builder' : 'Team Player',
                   icon: 'person-add',
                   color: hasTeamPlayer ? '#06B6D4' : '#9CA3AF',
                   earned: hasTeamPlayer,
-                  description: hasTeamPlayer ? `Completed ${completedEvents.length}+ events` : 'Complete 5+ events'
+                  description: hasTeamPlayer 
+                    ? (user?.role === 'organization' ? `Created ${completedEvents.length}+ community events` : `Completed ${completedEvents.length}+ events`)
+                    : (user?.role === 'organization' ? 'Create 5+ events' : 'Complete 5+ events')
                 }
               ];
 

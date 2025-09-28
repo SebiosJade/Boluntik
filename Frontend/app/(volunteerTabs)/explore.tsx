@@ -26,6 +26,93 @@ export default function BrowseOpportunitiesScreen() {
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
 
+  // Filter state
+  const [eventFilters, setEventFilters] = useState({
+    cause: '',
+    skill: '',
+    location: '',
+    date: ''
+  });
+  const [showCauseDropdown, setShowCauseDropdown] = useState(false);
+  const [showSkillDropdown, setShowSkillDropdown] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showFilterSection, setShowFilterSection] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Predefined filter options
+  const causeOptions = [
+    'Environment', 'Education', 'Healthcare', 'Community', 'Animals', 
+    'Disaster Relief', 'Arts & Culture', 'Sports', 'Technology', 'Other'
+  ];
+  
+  const skillOptions = [
+    'Physical', 'Technical', 'Communication', 'Leadership', 'Creative',
+    'Medical', 'Teaching', 'Organizational', 'Language', 'Other'
+  ];
+  
+  const locationOptions = [
+    'Beach', 'Community Center', 'School', 'Hospital', 'Park',
+    'Library', 'Office', 'Online', 'Outdoor', 'Other'
+  ];
+
+  // Filter handlers
+  const handleCauseSelect = (cause: string) => {
+    setEventFilters(prev => ({ ...prev, cause: cause === prev.cause ? '' : cause }));
+    setShowCauseDropdown(false);
+  };
+
+  const handleSkillSelect = (skill: string) => {
+    setEventFilters(prev => ({ ...prev, skill: skill === prev.skill ? '' : skill }));
+    setShowSkillDropdown(false);
+  };
+
+  const handleLocationSelect = (location: string) => {
+    setEventFilters(prev => ({ ...prev, location: location === prev.location ? '' : location }));
+    setShowLocationDropdown(false);
+  };
+
+  const closeAllDropdowns = () => {
+    setShowCauseDropdown(false);
+    setShowSkillDropdown(false);
+    setShowLocationDropdown(false);
+  };
+
+  const clearFilters = () => {
+    setEventFilters({ cause: '', skill: '', location: '', date: '' });
+    setSearchQuery('');
+    closeAllDropdowns();
+    setShowFilterSection(false);
+  };
+
+  // Filter events based on current filters and search
+  const getFilteredEvents = () => {
+    return events.filter(event => {
+      // Search filter
+      const matchesSearch = !searchQuery || 
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Cause filter
+      const matchesCause = !eventFilters.cause || 
+        event.cause?.toLowerCase().includes(eventFilters.cause.toLowerCase());
+
+      // Skill filter
+      const matchesSkill = !eventFilters.skill || 
+        event.skills?.toLowerCase().includes(eventFilters.skill.toLowerCase());
+
+      // Location filter
+      const matchesLocation = !eventFilters.location || 
+        event.location?.toLowerCase().includes(eventFilters.location.toLowerCase());
+
+      // Date filter
+      const matchesDate = !eventFilters.date || 
+        event.date === eventFilters.date;
+
+      return matchesSearch && matchesCause && matchesSkill && matchesLocation && matchesDate;
+    });
+  };
+
   // Load events on component mount
   useEffect(() => {
     const initializeData = async () => {
@@ -37,7 +124,13 @@ export default function BrowseOpportunitiesScreen() {
 
   // Load user's joined events from backend
   const loadJoinedEvents = async () => {
-    if (!user?.id) return new Set<string>();
+    console.log('explore.tsx - loadJoinedEvents - user object:', user);
+    console.log('explore.tsx - loadJoinedEvents - user.id:', user?.id);
+    
+    if (!user?.id || user.id.trim() === '') {
+      console.log('explore.tsx - No valid user ID found');
+      return new Set<string>();
+    }
     
     try {
       const joinedEvents = await eventService.getUserJoinedEvents(user.id);
@@ -271,19 +364,153 @@ export default function BrowseOpportunitiesScreen() {
         </View>
 
         {/* Search + Filter */}
-        <TextInput style={styles.searchInput} placeholder="Search for opportunities..." placeholderTextColor="#9CA3AF" />
-        <TouchableOpacity style={styles.filterButton} activeOpacity={0.85}>
+        <TextInput 
+          style={styles.searchInput} 
+          placeholder="Search for opportunities..." 
+          placeholderTextColor="#9CA3AF"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <TouchableOpacity 
+          style={styles.filterButton} 
+          activeOpacity={0.85}
+          onPress={() => {
+            closeAllDropdowns();
+            setShowFilterSection(!showFilterSection);
+          }}
+        >
           <Ionicons name="options-outline" size={16} color="#111827" />
           <Text style={styles.filterText}>Filter</Text>
         </TouchableOpacity>
+
+        {/* Filter Section */}
+        {(showFilterSection || showCauseDropdown || showSkillDropdown || showLocationDropdown || 
+          eventFilters.cause || eventFilters.skill || eventFilters.location || eventFilters.date) && (
+          <View style={styles.filtersContainer}>
+            <View style={styles.filterRow}>
+              {/* Cause Filter */}
+              <View style={styles.causeDropdownContainer}>
+                <TouchableOpacity 
+                  style={styles.dropdownButton}
+                  onPress={() => {
+                    closeAllDropdowns();
+                    setShowCauseDropdown(!showCauseDropdown);
+                  }}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {eventFilters.cause || 'Cause'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showCauseDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: 25 }]}>
+                    <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
+                      {causeOptions.map((cause) => (
+                        <TouchableOpacity
+                          key={cause}
+                          style={styles.dropdownItem}
+                          onPress={() => handleCauseSelect(cause)}
+                        >
+                          <Text style={styles.dropdownItemText}>{cause}</Text>
+                          {eventFilters.cause === cause && (
+                            <Ionicons name="checkmark" size={16} color="#10B981" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              {/* Skill Filter */}
+              <View style={styles.skillDropdownContainer}>
+                <TouchableOpacity 
+                  style={styles.dropdownButton}
+                  onPress={() => {
+                    closeAllDropdowns();
+                    setShowSkillDropdown(!showSkillDropdown);
+                  }}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {eventFilters.skill || 'Skill'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showSkillDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: 20 }]}>
+                    <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
+                      {skillOptions.map((skill) => (
+                        <TouchableOpacity
+                          key={skill}
+                          style={styles.dropdownItem}
+                          onPress={() => handleSkillSelect(skill)}
+                        >
+                          <Text style={styles.dropdownItemText}>{skill}</Text>
+                          {eventFilters.skill === skill && (
+                            <Ionicons name="checkmark" size={16} color="#10B981" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.filterRow}>
+              {/* Location Filter */}
+              <View style={styles.locationDropdownContainer}>
+                <TouchableOpacity 
+                  style={styles.dropdownButton}
+                  onPress={() => {
+                    closeAllDropdowns();
+                    setShowLocationDropdown(!showLocationDropdown);
+                  }}
+                >
+                  <Text style={styles.dropdownButtonText}>
+                    {eventFilters.location || 'Location'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showLocationDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: -1 }]}>
+                    <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
+                      {locationOptions.map((location) => (
+                        <TouchableOpacity
+                          key={location}
+                          style={styles.dropdownItem}
+                          onPress={() => handleLocationSelect(location)}
+                        >
+                          <Text style={styles.dropdownItemText}>{location}</Text>
+                          {eventFilters.location === location && (
+                            <Ionicons name="checkmark" size={16} color="#10B981" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              {/* Clear Filters */}
+              <TouchableOpacity 
+                style={styles.clearFiltersButton}
+                onPress={clearFilters}
+              >
+                <Ionicons name="close-circle" size={16} color="#EF4444" />
+                <Text style={styles.clearFiltersText}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Cards */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading opportunities...</Text>
           </View>
-        ) : events.length > 0 ? (
-          events.map((event) => (
+        ) : getFilteredEvents().length > 0 ? (
+          getFilteredEvents().map((event) => (
             <OpportunityCard 
               key={event.id} 
               event={event} 
@@ -949,5 +1176,107 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Filter styles
+  filtersContainer: {
+    marginTop: 16,
+    marginBottom: 8,
+    zIndex: 10,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    gap: 12,
+  },
+  dropdownContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 15,
+  },
+  causeDropdownContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 20,
+  },
+  skillDropdownContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 15,
+  },
+  locationDropdownContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: -1,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 44,
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    maxHeight: 200,
+    zIndex: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dropdownScrollView: {
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 44,
+    minWidth: 80,
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: '#EF4444',
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });

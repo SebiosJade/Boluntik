@@ -1,59 +1,41 @@
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { 
+  readEvents, 
+  writeEvents, 
+  readEventParticipants, 
+  writeEventParticipants,
+  findEventById,
+  findEventsByOrganization,
+  createEvent: createEventInDB,
+  updateEvent: updateEventInDB,
+  deleteEvent: deleteEventInDB,
+  findEventParticipantsByEvent,
+  findEventParticipantsByUser,
+  createEventParticipant: createParticipantInDB,
+  removeEventParticipant: removeParticipantInDB
+} = require('../../database/dataAccess');
 
-const EVENTS_FILE = path.join(__dirname, '../../data/events.json');
-const PARTICIPANTS_FILE = path.join(__dirname, '../../data/eventParticipants.json');
-
-// Helper function to read events
-const readEvents = async () => {
-  try {
-    const data = await fs.readFile(EVENTS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading events:', error);
-    return [];
-  }
-};
-
-// Helper function to write events
-const writeEvents = async (events) => {
-  try {
-    await fs.writeFile(EVENTS_FILE, JSON.stringify(events, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error writing events:', error);
-    return false;
-  }
-};
-
-// Helper function to read participants
-const readParticipants = async () => {
-  try {
-    const data = await fs.readFile(PARTICIPANTS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading participants:', error);
-    return [];
-  }
-};
-
-// Helper function to write participants
-const writeParticipants = async (participants) => {
-  try {
-    await fs.writeFile(PARTICIPANTS_FILE, JSON.stringify(participants, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error writing participants:', error);
-    return false;
-  }
-};
+// Note: Using the unified data access layer instead of local helper functions
+// The data access layer automatically handles both MongoDB and file-based storage
 
 // Get all events
 const getAllEvents = async (req, res) => {
   try {
     const events = await readEvents();
-    res.json(events);
+    const participants = await readEventParticipants();
+    
+    // Add actual participant count to each event
+    const eventsWithParticipants = events.map(event => {
+      const eventParticipants = participants.filter(p => p.eventId === event.id);
+      return {
+        ...event,
+        actualParticipants: eventParticipants.length.toString()
+      };
+    });
+    
+    res.json(eventsWithParticipants);
   } catch (error) {
     console.error('Error getting events:', error);
     res.status(500).json({ error: 'Failed to get events' });
@@ -64,9 +46,25 @@ const getAllEvents = async (req, res) => {
 const getEventsByOrganization = async (req, res) => {
   try {
     const { organizationId } = req.params;
+    console.log('getEventsByOrganization - Full req.params:', req.params);
+    console.log('getEventsByOrganization - Full req.url:', req.url);
+    console.log('getEventsByOrganization - Received organizationId:', organizationId);
+    console.log('getEventsByOrganization - organizationId type:', typeof organizationId);
+    
     const events = await readEvents();
+    const participants = await readEventParticipants();
     const organizationEvents = events.filter(event => event.organizationId === organizationId);
-    res.json(organizationEvents);
+    
+    // Add actual participant count to each event
+    const eventsWithParticipants = organizationEvents.map(event => {
+      const eventParticipants = participants.filter(p => p.eventId === event.id);
+      return {
+        ...event,
+        actualParticipants: eventParticipants.length.toString()
+      };
+    });
+    
+    res.json(eventsWithParticipants);
   } catch (error) {
     console.error('Error getting organization events:', error);
     res.status(500).json({ error: 'Failed to get organization events' });
@@ -77,9 +75,23 @@ const getEventsByOrganization = async (req, res) => {
 const getEventsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log('getEventsByUser - Received userId:', userId);
+    console.log('getEventsByUser - userId type:', typeof userId);
+    console.log('getEventsByUser - userId length:', userId?.length);
     const events = await readEvents();
+    const participants = await readEventParticipants();
     const userEvents = events.filter(event => event.createdBy === userId);
-    res.json(userEvents);
+    
+    // Add actual participant count to each event
+    const eventsWithParticipants = userEvents.map(event => {
+      const eventParticipants = participants.filter(p => p.eventId === event.id);
+      return {
+        ...event,
+        actualParticipants: eventParticipants.length.toString()
+      };
+    });
+    
+    res.json(eventsWithParticipants);
   } catch (error) {
     console.error('Error getting user events:', error);
     res.status(500).json({ error: 'Failed to get user events' });
@@ -105,7 +117,7 @@ const getEventById = async (req, res) => {
 };
 
 // Create new event
-const createEvent = async (req, res) => {
+const createEventController = async (req, res) => {
   try {
     const {
       title,
@@ -186,27 +198,17 @@ const updateEvent = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     
-    const events = await readEvents();
-    const eventIndex = events.findIndex(e => e.id === id);
+    // Use the new MongoDB data access layer
+    const updatedEvent = await updateEventInDB(id, {
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    });
     
-    if (eventIndex === -1) {
+    if (!updatedEvent) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Update event with new data
-    events[eventIndex] = {
-      ...events[eventIndex],
-      ...updateData,
-      updatedAt: new Date().toISOString()
-    };
-
-    const success = await writeEvents(events);
-    
-    if (!success) {
-      return res.status(500).json({ error: 'Failed to update event' });
-    }
-
-    res.json(events[eventIndex]);
+    res.json(updatedEvent);
   } catch (error) {
     console.error('Error updating event:', error);
     res.status(500).json({ error: 'Failed to update event' });
@@ -218,18 +220,11 @@ const deleteEvent = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const events = await readEvents();
-    const eventIndex = events.findIndex(e => e.id === id);
+    // Use the new MongoDB data access layer
+    const deletedEvent = await deleteEventInDB(id);
     
-    if (eventIndex === -1) {
+    if (!deletedEvent) {
       return res.status(404).json({ error: 'Event not found' });
-    }
-
-    events.splice(eventIndex, 1);
-    const success = await writeEvents(events);
-    
-    if (!success) {
-      return res.status(500).json({ error: 'Failed to delete event' });
     }
 
     res.json({ message: 'Event deleted successfully' });
@@ -250,7 +245,7 @@ const joinEvent = async (req, res) => {
     }
 
     // Read current participants
-    const participants = await readParticipants();
+    const participants = await readEventParticipants();
     
     // Check if user is already joined
     const existingParticipation = participants.find(
@@ -290,7 +285,7 @@ const joinEvent = async (req, res) => {
     };
 
     participants.push(newParticipant);
-    await writeParticipants(participants);
+    await writeEventParticipants(participants);
 
     // Update event's actualParticipants count
     const updatedEvents = events.map(e => {
@@ -328,7 +323,7 @@ const unjoinEvent = async (req, res) => {
     }
 
     // Read current participants
-    const participants = await readParticipants();
+    const participants = await readEventParticipants();
     
     // Find and remove participant
     const participantIndex = participants.findIndex(
@@ -340,7 +335,7 @@ const unjoinEvent = async (req, res) => {
     }
 
     const removedParticipant = participants.splice(participantIndex, 1)[0];
-    await writeParticipants(participants);
+    await writeEventParticipants(participants);
 
     // Update event's actualParticipants count
     const events = await readEvents();
@@ -371,17 +366,31 @@ const unjoinEvent = async (req, res) => {
 const getUserJoinedEvents = async (req, res) => {
   try {
     const { userId } = req.params;
-    const participants = await readParticipants();
-    const events = await readEvents();
+    console.log('getUserJoinedEvents - Full req.params:', req.params);
+    console.log('getUserJoinedEvents - Full req.url:', req.url);
+    console.log('getUserJoinedEvents - Received userId:', userId);
+    console.log('getUserJoinedEvents - userId type:', typeof userId);
+    console.log('getUserJoinedEvents - userId length:', userId?.length);
+    console.log('getUserJoinedEvents - userId trimmed:', userId?.trim());
     
-    const userParticipations = participants.filter(p => p.userId === userId);
-    const joinedEvents = userParticipations.map(participation => {
-      const event = events.find(e => e.id === participation.eventId);
-      return {
-        ...event,
-        joinedAt: participation.joinedAt
-      };
-    }).filter(event => event.id); // Filter out events that might have been deleted
+    if (!userId || userId.trim() === '') {
+      console.log('getUserJoinedEvents - Empty userId detected');
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    // Use the new data access layer methods
+    const userParticipations = await findEventParticipantsByUser(userId);
+    const joinedEvents = [];
+    
+    for (const participation of userParticipations) {
+      const event = await findEventById(participation.eventId);
+      if (event) {
+        joinedEvents.push({
+          ...event,
+          joinedAt: participation.joinedAt
+        });
+      }
+    }
 
     res.json(joinedEvents);
   } catch (error) {
@@ -394,7 +403,7 @@ const getUserJoinedEvents = async (req, res) => {
 const checkUserParticipation = async (req, res) => {
   try {
     const { eventId, userId } = req.params;
-    const participants = await readParticipants();
+    const participants = await readEventParticipants();
     
     const participation = participants.find(
       p => p.eventId === eventId && p.userId === userId
@@ -415,7 +424,7 @@ module.exports = {
   getEventsByOrganization,
   getEventsByUser,
   getEventById,
-  createEvent,
+  createEvent: createEventController,
   updateEvent,
   deleteEvent,
   joinEvent,

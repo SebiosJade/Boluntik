@@ -120,7 +120,7 @@ export default function CrowdfundingOrgScreen() {
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <ProfileDropdown />
+        <ProfileDropdown showMenuButton={true} onMenuPress={toggleMenu} />
 
         {/* Main Content */}
         <View style={styles.content}>

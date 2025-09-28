@@ -1,0 +1,1544 @@
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 11:50:24'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 11:50:28'
+}
+{
+  service: 'voluntech-backend',
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: MongoDB URI is not configured',
+  stack: 'Error: MongoDB URI is not configured\n' +
+    '    at DatabaseConnection.connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\Backend\\database\\connection.js:23:15)\n' +
+    '    at Server.<anonymous> (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\Backend\\index.js:102:26)\n' +
+    '    at Object.onceWrapper (node:events:632:28)\n' +
+    '    at Server.emit (node:events:530:35)\n' +
+    '    at emitListeningNT (node:net:1980:10)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)',
+  timestamp: '2025-09-28 13:10:01'
+}
+{
+  service: 'voluntech-backend',
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: MongoDB URI is not configured',
+  stack: 'Error: MongoDB URI is not configured\n' +
+    '    at DatabaseConnection.connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\Backend\\database\\connection.js:23:15)\n' +
+    '    at Server.<anonymous> (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\Backend\\index.js:102:26)\n' +
+    '    at Object.onceWrapper (node:events:632:28)\n' +
+    '    at Server.emit (node:events:530:35)\n' +
+    '    at emitListeningNT (node:net:1980:10)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)',
+  timestamp: '2025-09-28 13:10:01'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 14:08:26'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 14:08:29'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 14:54:06'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 14:55:12'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 15:22:42'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:08:04'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:14:35'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:14:42'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:14:49'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:15:04'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:15:24'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:16:07'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:16:45'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:16:50'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:16:55'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:16:59'
+}
+{
+  service: 'voluntech-backend',
+  level: 'error',
+  message: 'Error seeding system badges: Operation `badges.deleteMany()` buffering timed out after 10000ms',
+  stack: 'MongooseError: Operation `badges.deleteMany()` buffering timed out after 10000ms\n' +
+    '    at Timeout.<anonymous> (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongoose\\lib\\drivers\\node-mongodb-native\\collection.js:187:23)\n' +
+    '    at listOnTimeout (node:internal/timers:594:17)\n' +
+    '    at process.processTimers (node:internal/timers:529:7)',
+  timestamp: '2025-09-28 16:24:37'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 16:43:05'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 17:26:07'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 17:27:04'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 17:30:12'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 18:12:41'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:45:09'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:45:09'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:45:36'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:45:36'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:45:52'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:45:52'
+}
+{
+  message: 'UNHANDLED REJECTION! 💥 Shutting down...',
+  level: 'error',
+  service: 'voluntech-backend',
+  timestamp: '2025-09-28 18:46:09'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:46:49'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:46:49'
+}
+{
+  message: 'UNHANDLED REJECTION! 💥 Shutting down...',
+  level: 'error',
+  service: 'voluntech-backend',
+  timestamp: '2025-09-28 18:47:25'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:48:12'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:48:12'
+}
+{
+  message: 'UNHANDLED REJECTION! 💥 Shutting down...',
+  level: 'error',
+  service: 'voluntech-backend',
+  timestamp: '2025-09-28 18:48:31'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:49:16'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:49:16'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:49:41'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:49:41'
+}
+{
+  message: 'UNHANDLED REJECTION! 💥 Shutting down...',
+  level: 'error',
+  service: 'voluntech-backend',
+  timestamp: '2025-09-28 18:50:04'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:52:05'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:52:05'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:52:25'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:52:25'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:52:41'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:52:41'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:53:33'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:53:33'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:54:09'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:54:09'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:54:37'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:54:38'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:54:56'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:54:56'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:56:06'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:56:06'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:56:34'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:56:34'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:57:06'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 18:57:06'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 19:58:11'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 19:58:11'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 19:58:35'
+}
+{
+  service: 'voluntech-backend',
+  errorLabelSet: Set(2) { 'HandshakeError', 'ResetPool' },
+  errorResponse: {
+    ok: 0,
+    errmsg: 'bad auth : Authentication failed.',
+    code: 8000,
+    codeName: 'AtlasError'
+  },
+  ok: 0,
+  code: 8000,
+  codeName: 'AtlasError',
+  connectionGeneration: 0,
+  level: 'error',
+  message: 'Failed to connect to MongoDB Atlas: bad auth : Authentication failed.',
+  stack: 'MongoServerError: bad auth : Authentication failed.\n' +
+    '    at Connection.sendCommand (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:305:27)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async Connection.command (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connection.js:333:26)\n' +
+    '    at async executeScram (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:79:22)\n' +
+    '    at async ScramSHA256.auth (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\auth\\scram.js:39:16)\n' +
+    '    at async performInitialHandshake (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:104:13)\n' +
+    '    at async connect (C:\\Users\\DELL\\OneDrive\\Desktop\\practice\\App\\node_modules\\mongodb\\lib\\cmap\\connect.js:24:9)',
+  timestamp: '2025-09-28 19:58:35'
+}
+{
+  message: 'UNCAUGHT EXCEPTION! 💥 Shutting down...',
+  level: 'error',
+  service: 'voluntech-backend',
+  timestamp: '2025-09-28 19:59:03'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:04:38'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:05:43'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:05:52'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:05:57'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:06:06'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:06:11'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:06:18'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:06:44'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:16:17'
+}
+{
+  service: 'voluntech-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 4000,
+  level: 'error',
+  message: 'Server error: listen EADDRINUSE: address already in use 0.0.0.0:4000',
+  stack: 'Error: listen EADDRINUSE: address already in use 0.0.0.0:4000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1937:16)\n' +
+    '    at listenInCluster (node:net:1994:12)\n' +
+    '    at node:net:2203:7\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)',
+  timestamp: '2025-09-28 20:16:17'
+}

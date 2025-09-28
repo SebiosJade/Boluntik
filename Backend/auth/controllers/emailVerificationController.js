@@ -1,4 +1,4 @@
-const { readUsers, readEmailVerifications, writeEmailVerifications } = require('../utils/dataAccess');
+const { readUsers, readEmailVerifications, writeEmailVerifications, findUserByEmail, findEmailVerification, createEmailVerification, updateEmailVerification } = require('../../database/dataAccess');
 const { sendVerificationEmail } = require('../services/emailService');
 
 // Send verification email

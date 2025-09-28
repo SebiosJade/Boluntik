@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 // import 'react-native-reanimated'; // Disabled due to compatibility issues
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { AuthProvider } from '../contexts/AuthContext';
 
 export default function RootLayout() {
@@ -19,24 +20,26 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="interest" options={{ headerShown: false }} />
-          <Stack.Screen name="myprofile" options={{ headerShown: false }} />
-          <Stack.Screen name="notification" options={{ headerShown: false }} />
-          <Stack.Screen name="admin" options={{ headerShown: false }} />
-          <Stack.Screen name="volunteer" options={{ headerShown: false}} />
-          <Stack.Screen name="organization" options={{ headerShown: false}} />
-          <Stack.Screen name="(volunteerTabs)" options={{ headerShown: false}} />
-          <Stack.Screen name="(organizationTabs)" options={{ headerShown: false}} />
-          <Stack.Screen name="(adminTabs)" options={{ headerShown: false}} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="interest" options={{ headerShown: false }} />
+            <Stack.Screen name="myprofile" options={{ headerShown: false }} />
+            <Stack.Screen name="notification" options={{ headerShown: false }} />
+            <Stack.Screen name="admin" options={{ headerShown: false }} />
+            <Stack.Screen name="volunteer" options={{ headerShown: false}} />
+            <Stack.Screen name="organization" options={{ headerShown: false}} />
+            <Stack.Screen name="(volunteerTabs)" options={{ headerShown: false}} />
+            <Stack.Screen name="(organizationTabs)" options={{ headerShown: false}} />
+            <Stack.Screen name="(adminTabs)" options={{ headerShown: false}} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

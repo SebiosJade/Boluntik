@@ -199,7 +199,7 @@ export default function ReportsScreen() {
       </Animated.View>
 
       {/* Header */}
-      <ProfileDropdown />
+      <ProfileDropdown showMenuButton={true} onMenuPress={toggleMenu} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Main Content Header */}

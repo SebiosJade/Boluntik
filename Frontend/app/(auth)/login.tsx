@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../constants/Api';
@@ -33,20 +33,38 @@ export default function LoginScreen() {
       Alert.alert('Missing info', 'Please enter email and password');
       return;
     }
+    
+    console.log('=== FRONTEND LOGIN DEBUG ===');
+    console.log('Login attempt:', { email, passwordLength: password.length, rememberMe });
+    console.log('API endpoint:', API.login);
+    
     try {
       setSubmitting(true);
+      
+      const loginData = { email, password };
+      console.log('Sending login request with data:', loginData);
+      
       const res = await fetch(API.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(loginData),
       });
+      
+      console.log('Login response status:', res.status);
+      console.log('Login response headers:', res.headers);
+      
       const data = await res.json();
+      console.log('Login response data:', data);
+      
       if (!res.ok) {
+        console.log('Login failed with status:', res.status);
         throw new Error(data?.message || 'Login failed');
       }
       
       // Use the auth context to login with remember me
-      await login(data || { email }, rememberMe);
+      console.log('Login successful, calling auth context login...');
+      await login(data, rememberMe);
+      
       // Show success alert
       Alert.alert(
         '🎉 Welcome Back!',
@@ -54,12 +72,12 @@ export default function LoginScreen() {
         [
           {
             text: 'Continue',
-            
             style: 'default'
           }
         ]
       );
     } catch (e: any) {
+      console.error('Login error:', e);
       Alert.alert('Login failed', e?.message || 'Please try again');
     } finally {
       setSubmitting(false);
@@ -89,19 +107,32 @@ export default function LoginScreen() {
       return;
     }
 
+    console.log('=== FRONTEND SEND RESET CODE DEBUG ===');
+    console.log('Sending reset code for email:', forgotEmail);
+    console.log('API endpoint:', API.forgotPassword);
+
     try {
       setSendingCode(true);
+      
+      const resetData = { email: forgotEmail };
+      console.log('Sending reset request with data:', resetData);
+      
       const res = await fetch(API.forgotPassword, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
+        body: JSON.stringify(resetData),
       });
+      
+      console.log('Reset code response status:', res.status);
       const data = await res.json();
+      console.log('Reset code response data:', data);
       
       if (!res.ok) {
+        console.log('Reset code request failed:', data);
         throw new Error(data?.message || 'Failed to send reset code');
       }
 
+      console.log('Reset code sent successfully');
       Alert.alert('Success', 'If the email exists, a reset code has been sent');
       
       setCountdown(600); // 10 minutes

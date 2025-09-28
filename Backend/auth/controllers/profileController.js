@@ -1,10 +1,9 @@
-const { readUsers, writeUsers } = require('../utils/dataAccess');
+const { readUsers, writeUsers, findUserById, updateUser } = require('../../database/dataAccess');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+const config = require('../../config');
 
 // Configure multer for avatar uploads
 const storage = multer.diskStorage({
@@ -47,7 +46,7 @@ async function getProfile(req, res) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
     const users = await readUsers();
     const user = users.find((u) => u.id === payload.sub);
     
@@ -80,24 +79,35 @@ async function getProfile(req, res) {
 
 // Update user profile
 async function updateProfile(req, res) {
+  console.log('=== PROFILE UPDATE DEBUG ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Request headers:', req.headers);
+  
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   
   if (!token) {
+    console.log('ERROR: Missing token');
     return res.status(401).json({ message: 'Missing token' });
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
+    console.log('JWT payload:', payload);
+    
     const users = await readUsers();
     const userIndex = users.findIndex((u) => u.id === payload.sub);
     
     if (userIndex === -1) {
+      console.log('ERROR: User not found for ID:', payload.sub);
       return res.status(401).json({ message: 'Invalid token' });
     }
 
     const user = users[userIndex];
+    console.log('Current user:', { id: user.id, name: user.name, email: user.email });
+    
     const { name, bio, skills, availability, location, phone } = req.body;
+    console.log('Update data:', { name, bio, skills, availability, location, phone });
 
     // Validate required fields
     if (!name || name.trim().length === 0) {
@@ -120,8 +130,11 @@ async function updateProfile(req, res) {
     users[userIndex] = updatedUser;
     
     // Save to file
-    await writeUsers(users);
+    console.log('Saving updated user to file...');
+    const saveResult = await writeUsers(users);
+    console.log('Save result:', saveResult);
 
+    console.log('Profile update successful!');
     res.json({
       message: 'Profile updated successfully',
       user: {
@@ -140,30 +153,42 @@ async function updateProfile(req, res) {
     });
   } catch (e) {
     console.error('Update profile error:', e);
+    console.error('Error stack:', e.stack);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Update user interests (separate endpoint for interests management)
 async function updateInterests(req, res) {
+  console.log('=== INTERESTS UPDATE DEBUG ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Request headers:', req.headers);
+  
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   
   if (!token) {
+    console.log('ERROR: Missing token');
     return res.status(401).json({ message: 'Missing token' });
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
+    console.log('JWT payload:', payload);
+    
     const users = await readUsers();
     const userIndex = users.findIndex((u) => u.id === payload.sub);
     
     if (userIndex === -1) {
+      console.log('ERROR: User not found for ID:', payload.sub);
       return res.status(401).json({ message: 'Invalid token' });
     }
 
     const user = users[userIndex];
+    console.log('Current user:', { id: user.id, name: user.name, email: user.email });
+    
     const { interests } = req.body;
+    console.log('Interests data:', interests, 'Type:', typeof interests, 'Length:', interests?.length);
 
     // Validate interests
     if (!Array.isArray(interests)) {
@@ -177,43 +202,68 @@ async function updateInterests(req, res) {
       interestsUpdatedAt: new Date().toISOString()
     };
 
+    console.log('Updated interests:', updatedUser.interests);
+    console.log('Updated user:', { id: updatedUser.id, interests: updatedUser.interests });
+
     // Update the user in the array
     users[userIndex] = updatedUser;
     
     // Save to file
-    await writeUsers(users);
+    console.log('Saving updated interests to file...');
+    const saveResult = await writeUsers(users);
+    console.log('Interests save result:', saveResult);
 
+    console.log('Interests update successful!');
     res.json({
       message: 'Interests updated successfully',
       interests: updatedUser.interests
     });
   } catch (e) {
     console.error('Update interests error:', e);
+    console.error('Error stack:', e.stack);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Upload avatar image
 async function uploadAvatar(req, res) {
+  console.log('=== UPLOAD AVATAR DEBUG ===');
+  console.log('Request headers:', req.headers);
+  console.log('Request file:', req.file);
+  console.log('Request body:', req.body);
+  
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   
   if (!token) {
+    console.log('ERROR: Missing token');
     return res.status(401).json({ message: 'Missing token' });
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
+    console.log('JWT payload:', payload);
+    
     const users = await readUsers();
     const userIndex = users.findIndex((u) => u.id === payload.sub);
     
     if (userIndex === -1) {
+      console.log('ERROR: User not found for ID:', payload.sub);
       return res.status(401).json({ message: 'Invalid token' });
     }
 
     if (!req.file) {
+      console.log('ERROR: No image file provided');
       return res.status(400).json({ message: 'No image file provided' });
     }
+
+    console.log('File received:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    });
 
     const user = users[userIndex];
     
@@ -234,8 +284,11 @@ async function uploadAvatar(req, res) {
     };
 
     users[userIndex] = updatedUser;
-    await writeUsers(users);
+    console.log('Saving updated user with new avatar...');
+    const saveResult = await writeUsers(users);
+    console.log('Avatar save result:', saveResult);
 
+    console.log('Avatar upload successful!');
     res.json({
       message: 'Avatar uploaded successfully',
       avatar: avatarPath,
@@ -249,6 +302,7 @@ async function uploadAvatar(req, res) {
     });
   } catch (e) {
     console.error('Upload avatar error:', e);
+    console.error('Error stack:', e.stack);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -263,7 +317,7 @@ async function deleteAvatar(req, res) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
     const users = await readUsers();
     const userIndex = users.findIndex((u) => u.id === payload.sub);
     

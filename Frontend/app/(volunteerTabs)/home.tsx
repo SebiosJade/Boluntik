@@ -83,7 +83,15 @@ export default function HomeDashboardScreen() {
 
   // Load user's joined events and calculate badge metrics
   const loadJoinedEvents = async () => {
-    if (!user?.id) return;
+    console.log('loadJoinedEvents - user object:', user);
+    console.log('loadJoinedEvents - user.id:', user?.id);
+    console.log('loadJoinedEvents - user.id type:', typeof user?.id);
+    
+    if (!user?.id || user.id.trim() === '') {
+      console.log('loadJoinedEvents - No user ID found or empty user ID, returning early');
+      console.log('loadJoinedEvents - user object:', user);
+      return;
+    }
     
     try {
       setIsLoading(true);
@@ -536,7 +544,7 @@ function BadgesSection({
     },
     {
       id: 'helping-hand',
-      icon: <MaterialCommunityIcons name="hand-heart" size={18} color={hasHelpingHand ? "#F59E0B" : "#9CA3AF"} />,
+      icon: <MaterialCommunityIcons name="heart" size={18} color={hasHelpingHand ? "#F59E0B" : "#9CA3AF"} />,
       title: "Helping Hand",
       subtitle: hasHelpingHand ? `Volunteered for ${totalHours}+ hours` : "Volunteer for 10+ hours",
       earned: hasHelpingHand

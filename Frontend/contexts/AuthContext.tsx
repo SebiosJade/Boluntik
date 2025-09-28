@@ -1,6 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -37,11 +37,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (storedToken && storedUser && storedRememberMe === 'true') {
         const userData = JSON.parse(storedUser);
+        console.log('AuthContext checkStoredAuth - stored userData:', userData);
+        console.log('AuthContext checkStoredAuth - stored userData.id:', userData?.id);
+        
+        if (!userData || !userData.id) {
+          console.error('AuthContext checkStoredAuth - Invalid stored user data:', userData);
+          // Clear invalid stored data
+          await AsyncStorage.removeItem('auth_token');
+          await AsyncStorage.removeItem('auth_user');
+          await AsyncStorage.removeItem('remember_me');
+          setIsAuthenticated(false);
+          return;
+        }
+        
         setUser(userData);
         setToken(storedToken);
         setIsAuthenticated(true);
         setIsFirstTime(false);
       } else {
+        console.log('AuthContext checkStoredAuth - No stored auth found');
         setIsAuthenticated(false);
       }
     } catch (error) {
@@ -79,6 +93,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, segments, isNavigationReady]);
 
   const login = async (userData: any, rememberMe: boolean = false) => {
+    console.log('AuthContext login - userData:', userData);
+    console.log('AuthContext login - userData.user:', userData.user);
+    console.log('AuthContext login - userData.user.id:', userData.user?.id);
+    
+    if (!userData || !userData.user || !userData.user.id) {
+      console.error('AuthContext login - Invalid user data received:', userData);
+      throw new Error('Invalid user data received from server');
+    }
+    
     setUser(userData.user);
     setToken(userData.token);
     setNeedsOnboarding(userData.needsOnboarding);

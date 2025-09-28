@@ -1,19 +1,31 @@
 const bcrypt = require('bcryptjs');
-const { readUsers, writeUsers, readEmailVerifications, writeEmailVerifications } = require('../utils/dataAccess');
+const { readUsers, writeUsers, readEmailVerifications, writeEmailVerifications, findUserByEmail, findEmailVerification, createEmailVerification, updateEmailVerification } = require('../../database/dataAccess');
 const { sendVerificationEmail } = require('../services/emailService');
 
 // Send password reset code
 async function sendPasswordReset(req, res) {
+  console.log('=== SEND PASSWORD RESET DEBUG ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
   const { email } = req.body || {};
 
   if (!email) {
+    console.log('ERROR: Email is required');
     return res.status(400).json({ message: 'Email is required' });
   }
 
+  console.log('Looking up user for email:', email);
   const users = await readUsers();
   const user = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
   
+  console.log('User lookup result:', { 
+    userFound: !!user, 
+    userEmail: user?.email,
+    totalUsers: users.length 
+  });
+  
   if (!user) {
+    console.log('User not found, returning generic success message for security');
     // For security, don't reveal if email exists or not
     return res.json({ 
       success: true, 
@@ -42,16 +54,23 @@ async function sendPasswordReset(req, res) {
   filteredVerifications.push(verification);
   await writeEmailVerifications(filteredVerifications);
 
+  console.log('Generated reset code:', resetCode);
+  console.log('Reset code expires at:', expiresAt.toISOString());
+  
   // Send password reset email
+  console.log('Attempting to send reset email...');
   const emailSent = await sendPasswordResetEmail(email, resetCode);
+  console.log('Email send result:', emailSent);
   
   if (emailSent) {
+    console.log('Password reset email sent successfully');
     res.json({ 
       success: true, 
       message: 'If the email exists, a reset code has been sent',
       expiresIn: 600 // 10 minutes in seconds
     });
   } else {
+    console.log('ERROR: Failed to send reset email');
     res.status(500).json({ message: 'Failed to send reset email' });
   }
 }

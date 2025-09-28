@@ -1,8 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View, Platform, Modal } from 'react-native';
+import { useState } from 'react';
+import { Alert, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ProfileIconProps {
     showMenuButton?: boolean;
@@ -25,8 +25,25 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
 
     const handleLogout = () => {
         setShowDropdown(false);
-        logout();
-        console.log('Logout pressed');
+        
+        Alert.alert(
+            'Logout Confirmation',
+            'Are you sure you want to logout? You will need to sign in again to access your account.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: () => {
+                        logout();
+                        console.log('Logout confirmed and executed');
+                    },
+                },
+            ]
+        );
     };
     return (
         <View style={styles.headerBar}>

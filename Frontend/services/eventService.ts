@@ -53,10 +53,12 @@ export interface CreateEventData {
 }
 
 class EventService {
-  private async makeRequest(url: string, options: RequestInit = {}) {
+  private   async makeRequest(url: string, options: RequestInit = {}) {
     try {
       console.log('Making API request to:', url);
       console.log('Request options:', options);
+      console.log('Request method:', options.method || 'GET');
+      console.log('Call stack:', new Error().stack);
       
       const response = await fetch(url, {
         headers: {
@@ -97,7 +99,18 @@ class EventService {
   }
 
   async getEventsByUser(userId: string): Promise<Event[]> {
-    return this.makeRequest(API.events.getByUser(userId));
+    console.log('getEventsByUser called with userId:', userId);
+    console.log('userId type:', typeof userId);
+    console.log('userId length:', userId?.length);
+    console.log('userId encoded:', encodeURIComponent(userId || ''));
+    
+    if (!userId || userId.trim() === '') {
+      throw new Error('User ID is required');
+    }
+    
+    const url = API.events.getByUser(userId);
+    console.log('Final URL:', url);
+    return this.makeRequest(url);
   }
 
   async createEvent(eventData: CreateEventData): Promise<Event> {
@@ -138,7 +151,18 @@ class EventService {
 
   // Get user's joined events
   async getUserJoinedEvents(userId: string): Promise<Event[]> {
-    return this.makeRequest(API.events.getUserJoined(userId));
+    console.log('getUserJoinedEvents called with userId:', userId);
+    console.log('userId type:', typeof userId);
+    console.log('userId length:', userId?.length);
+    console.log('userId encoded:', encodeURIComponent(userId || ''));
+    
+    if (!userId || userId.trim() === '') {
+      throw new Error('User ID is required');
+    }
+    
+    const url = API.events.getUserJoined(userId);
+    console.log('Final URL:', url);
+    return this.makeRequest(url);
   }
 
   // Check if user has joined an event

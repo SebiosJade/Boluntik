@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../constants/Api';
@@ -91,15 +91,34 @@ export default function SignUpScreen() {
   };
 
   const onSignup = async () => {
+    console.log('=== FRONTEND SIGNUP DEBUG ===');
+    console.log('Signup attempt:', { 
+      name: name?.length || 0, 
+      email: email?.length || 0, 
+      passwordLength: password?.length || 0,
+      confirmPasswordLength: confirmPassword?.length || 0,
+      emailVerified,
+      verificationCodeLength: verificationCode?.length || 0,
+      isVolunteer 
+    });
+    
     if (!name || !email || !password || !confirmPassword) {
+      console.log('ERROR: Missing required fields');
       Alert.alert('Missing info', 'Please fill all fields');
       return;
     }
+    if (password.length < 6) {
+      console.log('ERROR: Password too short');
+      Alert.alert('Password too short', 'Password must be at least 6 characters long');
+      return;
+    }
     if (password !== confirmPassword) {
+      console.log('ERROR: Passwords do not match');
       Alert.alert('Passwords do not match', 'Please re-enter your password');
       return;
     }
     if (!emailVerified) {
+      console.log('ERROR: Email not verified');
       Alert.alert('Email Not Verified', 'Please verify your email first');
       return;
     }
@@ -107,15 +126,35 @@ export default function SignUpScreen() {
     try {
       setSubmitting(true);
       const role = isVolunteer ? 'volunteer' : 'organization';
+      
+      const signupData = { name, email, password, role, verificationCode };
+      console.log('Sending signup request with data:', {
+        name,
+        email,
+        passwordLength: password.length,
+        role,
+        verificationCodeLength: verificationCode.length
+      });
+      console.log('API endpoint:', API.signup);
+      
       const res = await fetch(API.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, verificationCode }),
+        body: JSON.stringify(signupData),
       });
+      
+      console.log('Signup response status:', res.status);
+      console.log('Signup response headers:', res.headers);
+      
       const data = await res.json();
+      console.log('Signup response data:', data);
+      
       if (!res.ok) {
+        console.log('Signup failed with status:', res.status);
         throw new Error(data?.message || 'Signup failed');
       }
+      
+      console.log('Signup successful!');
       // Show sweet success alert, then redirect to login
       Alert.alert(
         '🎉 Welcome to VolunTech!',

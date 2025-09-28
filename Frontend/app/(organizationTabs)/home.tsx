@@ -27,7 +27,13 @@ export default function OrganizationDashboard() {
   }, []);
 
   const loadEvents = async () => {
-    if (!user?.id) return;
+    console.log('organization home - loadEvents - user object:', user);
+    console.log('organization home - loadEvents - user.id:', user?.id);
+    
+    if (!user?.id || user.id.trim() === '') {
+      console.log('organization home - No valid user ID found');
+      return;
+    }
     
     setIsLoadingEvents(true);
     try {
@@ -56,6 +62,11 @@ export default function OrganizationDashboard() {
     }).length;
     
     const completedEvents = createdEvents.filter(event => {
+      // Check if event status is explicitly "Completed"
+      if (event.status === 'Completed') {
+        return true;
+      }
+      
       // Parse MM/DD/YYYY format
       const [month, day, year] = event.date.split('/').map(Number);
       const eventDate = new Date(year, month - 1, day);
@@ -64,6 +75,11 @@ export default function OrganizationDashboard() {
     }).length;
 
     const upcomingEvents = createdEvents.filter(event => {
+      // Filter out completed events
+      if (event.status === 'Completed') {
+        return false;
+      }
+      
       // Parse MM/DD/YYYY format
       const [month, day, year] = event.date.split('/').map(Number);
       const eventDate = new Date(year, month - 1, day);
@@ -84,6 +100,11 @@ export default function OrganizationDashboard() {
     now.setHours(0, 0, 0, 0); // Set to start of day for comparison
     
     const upcomingEvents = createdEvents.filter(event => {
+      // Filter out completed events
+      if (event.status === 'Completed') {
+        return false;
+      }
+      
       // Parse MM/DD/YYYY format
       const [month, day, year] = event.date.split('/').map(Number);
       const eventDate = new Date(year, month - 1, day);
@@ -94,7 +115,8 @@ export default function OrganizationDashboard() {
         eventDateString: event.date,
         eventDate: eventDate.toISOString(),
         now: now.toISOString(),
-        isUpcoming: eventDate >= now
+        isUpcoming: eventDate >= now,
+        status: event.status
       });
       
       return eventDate >= now;
@@ -283,7 +305,7 @@ export default function OrganizationDashboard() {
                   </View>
                   <View style={[styles.volunteerTag, { backgroundColor: '#DBEAFE' }]}>
                     <Text style={[styles.volunteerText, { color: '#3B82F6' }]}>
-                      {event.maxParticipants || 'TBD'} volunteers joined
+                      {event.actualParticipants || '0'} volunteers joined
                     </Text>
                   </View>
                 </View>
@@ -445,6 +467,7 @@ export default function OrganizationDashboard() {
               </View>
             ) : createdEvents.length > 0 ? (
               createdEvents
+                .filter(event => event.status !== 'Completed') // Filter out completed events
                 .sort((a, b) => {
                   // Sort by date (upcoming first)
                   const [monthA, dayA, yearA] = a.date.split('/').map(Number);

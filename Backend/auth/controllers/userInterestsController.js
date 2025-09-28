@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { readUsers, writeUsers } = require('../utils/dataAccess');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+const { readUsers, writeUsers, findUserById, updateUser } = require('../../database/dataAccess');
+const config = require('../../config'); // Use config instead of direct env access
 
 // Get user interests
 async function getUserInterests(req, res) {
@@ -13,7 +12,7 @@ async function getUserInterests(req, res) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
     const users = await readUsers();
     const user = users.find((u) => u.id === payload.sub);
     
@@ -61,7 +60,7 @@ async function updateUserInterests(req, res) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, config.jwt.secret);
     const users = await readUsers();
     const userIndex = users.findIndex((u) => u.id === payload.sub);
     

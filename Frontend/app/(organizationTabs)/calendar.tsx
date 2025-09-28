@@ -25,10 +25,8 @@ export default function CalendarScreen() {
     endTime: '',
     location: '',
     maxParticipants: '',
-    cause: '',
-    skills: '',
-    requirements: '',
-    contactInfo: '',
+    cause: [] as string[],
+    skills: [] as string[],
     eventType: 'volunteer',
     difficulty: 'beginner',
     ageRestriction: '',
@@ -61,8 +59,8 @@ export default function CalendarScreen() {
     endTime: '',
     location: '',
     maxParticipants: '',
-    cause: '',
-    skills: '',
+    cause: [] as string[],
+    skills: [] as string[],
     eventType: '',
     difficulty: '',
     ageRestriction: '',
@@ -77,8 +75,11 @@ export default function CalendarScreen() {
   }, []);
 
   const loadEvents = async () => {
-    if (!user?.id) {
-      console.log('No user ID available for loading events');
+    console.log('organization calendar - loadEvents - user object:', user);
+    console.log('organization calendar - loadEvents - user.id:', user?.id);
+    
+    if (!user?.id || user.id.trim() === '') {
+      console.log('organization calendar - No valid user ID found');
       return;
     }
     
@@ -105,6 +106,14 @@ export default function CalendarScreen() {
   const [showCauseDropdown, setShowCauseDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showFormCauseDropdown, setShowFormCauseDropdown] = useState(false);
+  const [showFormSkillDropdown, setShowFormSkillDropdown] = useState(false);
+  const [showFormEventTypeDropdown, setShowFormEventTypeDropdown] = useState(false);
+  const [showFormDifficultyDropdown, setShowFormDifficultyDropdown] = useState(false);
+  const [showEditCauseDropdown, setShowEditCauseDropdown] = useState(false);
+  const [showEditSkillDropdown, setShowEditSkillDropdown] = useState(false);
+  const [showEditEventTypeDropdown, setShowEditEventTypeDropdown] = useState(false);
+  const [showEditDifficultyDropdown, setShowEditDifficultyDropdown] = useState(false);
 
   // Predefined filter options
   const causeOptions = [
@@ -122,6 +131,16 @@ export default function CalendarScreen() {
     'Library', 'Office', 'Online', 'Outdoor', 'Other'
   ];
 
+  // Event type and difficulty options
+  const eventTypeOptions = [
+    'Volunteer', 'Workshop', 'Training', 'Conference', 'Fundraiser', 
+    'Community Service', 'Educational', 'Recreational', 'Professional Development', 'Other'
+  ];
+
+  const difficultyOptions = [
+    'Beginner', 'Intermediate', 'Advanced', 'Expert', 'All Levels'
+  ];
+
   // Handle date selection from calendar
   const handleDateSelect = (date: Date) => {
     const formattedDate = formatDateForInput(date);
@@ -136,6 +155,24 @@ export default function CalendarScreen() {
       location: '',
       date: ''
     });
+    setShowCauseDropdown(false);
+    setShowSkillDropdown(false);
+    setShowLocationDropdown(false);
+  };
+
+  // Close all dropdowns
+  const closeAllDropdowns = () => {
+    setShowCauseDropdown(false);
+    setShowSkillDropdown(false);
+    setShowLocationDropdown(false);
+    setShowFormCauseDropdown(false);
+    setShowFormSkillDropdown(false);
+    setShowFormEventTypeDropdown(false);
+    setShowFormDifficultyDropdown(false);
+    setShowEditCauseDropdown(false);
+    setShowEditSkillDropdown(false);
+    setShowEditEventTypeDropdown(false);
+    setShowEditDifficultyDropdown(false);
   };
 
   // Handle dropdown selections
@@ -152,6 +189,76 @@ export default function CalendarScreen() {
   const handleLocationSelect = (location: string) => {
     setEventFilters(prev => ({ ...prev, location }));
     setShowLocationDropdown(false);
+  };
+
+  // Form dropdown handlers
+  const handleFormCauseSelect = (option: string) => {
+    setEventForm(prev => ({
+      ...prev,
+      cause: prev.cause.includes(option) 
+        ? prev.cause.filter(item => item !== option)
+        : [...prev.cause, option]
+    }));
+  };
+
+  const handleFormSkillSelect = (option: string) => {
+    setEventForm(prev => ({
+      ...prev,
+      skills: prev.skills.includes(option) 
+        ? prev.skills.filter(item => item !== option)
+        : [...prev.skills, option]
+    }));
+  };
+
+  const handleFormEventTypeSelect = (option: string) => {
+    setEventForm(prev => ({
+      ...prev,
+      eventType: option
+    }));
+    setShowFormEventTypeDropdown(false);
+  };
+
+  const handleFormDifficultySelect = (option: string) => {
+    setEventForm(prev => ({
+      ...prev,
+      difficulty: option
+    }));
+    setShowFormDifficultyDropdown(false);
+  };
+
+  // Edit form dropdown handlers
+  const handleEditCauseSelect = (option: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      cause: prev.cause.includes(option) 
+        ? prev.cause.filter(item => item !== option)
+        : [...prev.cause, option]
+    }));
+  };
+
+  const handleEditSkillSelect = (option: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      skills: prev.skills.includes(option) 
+        ? prev.skills.filter(item => item !== option)
+        : [...prev.skills, option]
+    }));
+  };
+
+  const handleEditEventTypeSelect = (option: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      eventType: option
+    }));
+    setShowEditEventTypeDropdown(false);
+  };
+
+  const handleEditDifficultySelect = (option: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      difficulty: option
+    }));
+    setShowEditDifficultyDropdown(false);
   };
 
   // Event action handlers
@@ -173,8 +280,8 @@ export default function CalendarScreen() {
       endTime: event.endTime || '',
       location: event.location || '',
       maxParticipants: event.maxParticipants || '',
-      cause: event.cause || '',
-      skills: event.skills || '',
+      cause: event.cause ? event.cause.split(', ').filter(item => item.trim()) : [],
+      skills: event.skills ? event.skills.split(', ').filter(item => item.trim()) : [],
       eventType: event.eventType || '',
       difficulty: event.difficulty || '',
       ageRestriction: event.ageRestriction || '',
@@ -208,6 +315,12 @@ export default function CalendarScreen() {
 
   // Edit form handlers
   const handleEditInputChange = (field: string, value: string) => {
+    // Handle array fields differently
+    if (field === 'cause' || field === 'skills') {
+      // Don't allow direct text input for array fields
+      return;
+    }
+    
     setEditForm(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (editFormErrors[field]) {
@@ -262,12 +375,12 @@ export default function CalendarScreen() {
       errors.maxParticipants = 'Please enter a valid number';
     }
 
-    if (!editForm.cause.trim()) {
-      errors.cause = 'Cause is required';
+    if (editForm.cause.length === 0) {
+      errors.cause = 'Please select at least one cause';
     }
 
-    if (!editForm.skills.trim()) {
-      errors.skills = 'Skills required is required';
+    if (editForm.skills.length === 0) {
+      errors.skills = 'Please select at least one skill';
     }
 
     setEditFormErrors(errors);
@@ -289,8 +402,8 @@ export default function CalendarScreen() {
         endTime: editForm.endTime,
         location: editForm.location,
         maxParticipants: editForm.maxParticipants,
-        cause: editForm.cause,
-        skills: editForm.skills,
+        cause: editForm.cause.join(', '), // Convert array to comma-separated string
+        skills: editForm.skills.join(', '), // Convert array to comma-separated string
         eventType: editForm.eventType,
         difficulty: editForm.difficulty,
         ageRestriction: editForm.ageRestriction,
@@ -672,10 +785,8 @@ export default function CalendarScreen() {
       endTime: '',
       location: '',
       maxParticipants: '',
-      cause: '',
-      skills: '',
-      requirements: '',
-      contactInfo: '',
+      cause: [], // Reset to empty array
+      skills: [], // Reset to empty array
       eventType: 'volunteer',
       difficulty: 'beginner',
       ageRestriction: '',
@@ -684,6 +795,12 @@ export default function CalendarScreen() {
   };
 
   const handleInputChange = (field: string, value: string) => {
+    // Handle array fields differently
+    if (field === 'cause' || field === 'skills') {
+      // Don't allow direct text input for array fields
+      return;
+    }
+    
     setEventForm(prev => ({
       ...prev,
       [field]: value
@@ -750,6 +867,14 @@ export default function CalendarScreen() {
     
     if (!eventForm.location.trim()) {
       errors.location = 'Event location is required';
+    }
+    
+    if (eventForm.cause.length === 0) {
+      errors.cause = 'Please select at least one cause';
+    }
+    
+    if (eventForm.skills.length === 0) {
+      errors.skills = 'Please select at least one skill';
     }
     
     if (eventForm.maxParticipants) {
@@ -967,8 +1092,8 @@ export default function CalendarScreen() {
         maxParticipants: eventForm.maxParticipants,
         eventType: eventForm.eventType,
         difficulty: eventForm.difficulty,
-        cause: eventForm.cause,
-        skills: eventForm.skills,
+        cause: eventForm.cause.join(', '), // Convert array to comma-separated string
+        skills: eventForm.skills.join(', '), // Convert array to comma-separated string
         ageRestriction: eventForm.ageRestriction,
         equipment: eventForm.equipment,
         org: user?.name || 'Your Organization',
@@ -1072,7 +1197,7 @@ export default function CalendarScreen() {
       </Animated.View>
 
       {/* Header */}
-          <ProfileDropdown />
+          <ProfileDropdown showMenuButton={true} onMenuPress={toggleMenu} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Main Content Header */}
@@ -1208,13 +1333,26 @@ export default function CalendarScreen() {
 
 
         {/* Event Filters */}
-        <View style={styles.filtersContainer}>
+        <TouchableOpacity 
+          style={styles.filtersContainer}
+          activeOpacity={1}
+          onPress={closeAllDropdowns}
+        >
           <View style={styles.filterRow}>
             {/* Cause Dropdown */}
             <View style={styles.dropdownContainer}>
               <TouchableOpacity 
                 style={styles.dropdownButton}
-                onPress={() => setShowCauseDropdown(!showCauseDropdown)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setShowCauseDropdown(!showCauseDropdown);
+                  setShowSkillDropdown(false);
+                  setShowLocationDropdown(false);
+                  setShowFormCauseDropdown(false);
+                  setShowFormSkillDropdown(false);
+                  setShowFormEventTypeDropdown(false);
+                  setShowFormDifficultyDropdown(false);
+                }}
               >
                 <Text style={[styles.dropdownButtonText, !eventFilters.cause && styles.placeholderText]}>
                   {eventFilters.cause || 'Select Cause'}
@@ -1222,16 +1360,22 @@ export default function CalendarScreen() {
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
               {showCauseDropdown && (
-                <View style={styles.dropdownList}>
-                  {causeOptions.map((option) => (
-                    <TouchableOpacity
-                      key={option}
-                      style={styles.dropdownItem}
-                      onPress={() => handleCauseSelect(option)}
-                    >
-                      <Text style={styles.dropdownItemText}>{option}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={[styles.dropdownList, { zIndex: 100010, elevation: 100 }]}>
+                  <ScrollView 
+                    style={styles.dropdownScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                  >
+                    {causeOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={styles.dropdownItem}
+                        onPress={() => handleCauseSelect(option)}
+                      >
+                        <Text style={styles.dropdownItemText}>{option}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
@@ -1240,7 +1384,16 @@ export default function CalendarScreen() {
             <View style={styles.dropdownContainer}>
               <TouchableOpacity 
                 style={styles.dropdownButton}
-                onPress={() => setShowSkillDropdown(!showSkillDropdown)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setShowSkillDropdown(!showSkillDropdown);
+                  setShowCauseDropdown(false);
+                  setShowLocationDropdown(false);
+                  setShowFormCauseDropdown(false);
+                  setShowFormSkillDropdown(false);
+                  setShowFormEventTypeDropdown(false);
+                  setShowFormDifficultyDropdown(false);
+                }}
               >
                 <Text style={[styles.dropdownButtonText, !eventFilters.skill && styles.placeholderText]}>
                   {eventFilters.skill || 'Select Skill'}
@@ -1248,27 +1401,44 @@ export default function CalendarScreen() {
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
               {showSkillDropdown && (
-                <View style={styles.dropdownList}>
-                  {skillOptions.map((option) => (
-                    <TouchableOpacity
-                      key={option}
-                      style={styles.dropdownItem}
-                      onPress={() => handleSkillSelect(option)}
-                    >
-                      <Text style={styles.dropdownItemText}>{option}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={[styles.dropdownList, { zIndex: 100009, elevation: 90 }]}>
+                  <ScrollView 
+                    style={styles.dropdownScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                  >
+                    {skillOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={styles.dropdownItem}
+                        onPress={() => handleSkillSelect(option)}
+                      >
+                        <Text style={styles.dropdownItemText}>{option}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
           </View>
           
-          <View style={styles.filterRow}>
+          <View style={[styles.filterRow, { zIndex: -1, elevation: -1 }]}>
             {/* Location Dropdown */}
-            <View style={styles.dropdownContainer}>
+            <View style={[styles.dropdownContainer, { zIndex: -2, elevation: -2 }]}>
               <TouchableOpacity 
                 style={styles.dropdownButton}
-                onPress={() => setShowLocationDropdown(!showLocationDropdown)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  // Always close other dropdowns first
+                  setShowCauseDropdown(false);
+                  setShowSkillDropdown(false);
+                  setShowFormCauseDropdown(false);
+                  setShowFormSkillDropdown(false);
+                  setShowFormEventTypeDropdown(false);
+                  setShowFormDifficultyDropdown(false);
+                  // Then toggle location dropdown
+                  setShowLocationDropdown(!showLocationDropdown);
+                }}
               >
                 <Text style={[styles.dropdownButtonText, !eventFilters.location && styles.placeholderText]}>
                   {eventFilters.location || 'Select Location'}
@@ -1276,21 +1446,30 @@ export default function CalendarScreen() {
                 <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
               {showLocationDropdown && (
-                <View style={styles.dropdownList}>
-                  {locationOptions.map((option) => (
-                    <TouchableOpacity
-                      key={option}
-                      style={styles.dropdownItem}
-                      onPress={() => handleLocationSelect(option)}
-                    >
-                      <Text style={styles.dropdownItemText}>{option}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={[styles.dropdownList, { 
+                  zIndex: -3, 
+                  elevation: -3
+                }]}>
+                  <ScrollView 
+                    style={styles.dropdownScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                  >
+                    {locationOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={styles.dropdownItem}
+                        onPress={() => handleLocationSelect(option)}
+                      >
+                        <Text style={styles.dropdownItemText}>{option}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
 
-            <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
+            <TouchableOpacity style={[styles.clearFiltersButton, { zIndex: -1, elevation: -1 }]} onPress={clearFilters}>
               <Ionicons name="close-circle" size={16} color="#6B7280" />
               <Text style={styles.clearFiltersText}>Clear</Text>
             </TouchableOpacity>
@@ -1304,7 +1483,7 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
 
         {getUpcomingEvents().map((event) => {
           // Check if this is a past event
@@ -1471,23 +1650,93 @@ export default function CalendarScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, styles.halfWidth]}>
                 <Text style={styles.inputLabel}>Event Type *</Text>
-                <View style={[styles.pickerButton, formErrors.eventType && styles.inputError]}>
-                  <Text style={[styles.pickerButtonText, !eventForm.eventType && styles.placeholderText]}>
+                <TouchableOpacity 
+                  style={[styles.dropdownButton, formErrors.eventType && styles.inputError]}
+                  onPress={() => {
+                    setShowFormEventTypeDropdown(!showFormEventTypeDropdown);
+                    setShowFormDifficultyDropdown(false);
+                    setShowFormCauseDropdown(false);
+                    setShowFormSkillDropdown(false);
+                    setShowCauseDropdown(false);
+                    setShowSkillDropdown(false);
+                    setShowLocationDropdown(false);
+                  }}
+                >
+                  <Text style={[styles.dropdownButtonText, !eventForm.eventType && styles.placeholderText]}>
                     {eventForm.eventType || 'Select type'}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                </View>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showFormEventTypeDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: 100008, elevation: 80 }]}>
+                    <ScrollView 
+                      style={styles.dropdownScrollView}
+                      showsVerticalScrollIndicator={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {eventTypeOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[styles.dropdownItem, eventForm.eventType === option && styles.selectedItem]}
+                          onPress={() => handleFormEventTypeSelect(option)}
+                        >
+                          <Text style={[styles.dropdownItemText, eventForm.eventType === option && styles.selectedItemText]}>
+                            {option}
+                          </Text>
+                          {eventForm.eventType === option && (
+                            <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
                 {formErrors.eventType && <Text style={styles.errorText}>{formErrors.eventType}</Text>}
               </View>
 
               <View style={[styles.inputGroup, styles.halfWidth]}>
                 <Text style={styles.inputLabel}>Difficulty *</Text>
-                <View style={[styles.pickerButton, formErrors.difficulty && styles.inputError]}>
-                  <Text style={[styles.pickerButtonText, !eventForm.difficulty && styles.placeholderText]}>
+                <TouchableOpacity 
+                  style={[styles.dropdownButton, formErrors.difficulty && styles.inputError]}
+                  onPress={() => {
+                    setShowFormDifficultyDropdown(!showFormDifficultyDropdown);
+                    setShowFormEventTypeDropdown(false);
+                    setShowFormCauseDropdown(false);
+                    setShowFormSkillDropdown(false);
+                    setShowCauseDropdown(false);
+                    setShowSkillDropdown(false);
+                    setShowLocationDropdown(false);
+                  }}
+                >
+                  <Text style={[styles.dropdownButtonText, !eventForm.difficulty && styles.placeholderText]}>
                     {eventForm.difficulty || 'Select level'}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                </View>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showFormDifficultyDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: 100007, elevation: 70 }]}>
+                    <ScrollView 
+                      style={styles.dropdownScrollView}
+                      showsVerticalScrollIndicator={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {difficultyOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[styles.dropdownItem, eventForm.difficulty === option && styles.selectedItem]}
+                          onPress={() => handleFormDifficultySelect(option)}
+                        >
+                          <Text style={[styles.dropdownItemText, eventForm.difficulty === option && styles.selectedItemText]}>
+                            {option}
+                          </Text>
+                          {eventForm.difficulty === option && (
+                            <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
                 {formErrors.difficulty && <Text style={styles.errorText}>{formErrors.difficulty}</Text>}
               </View>
             </View>
@@ -1496,25 +1745,93 @@ export default function CalendarScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, styles.halfWidth]}>
                 <Text style={styles.inputLabel}>Cause *</Text>
-                <TextInput
-                  style={[styles.textInput, formErrors.cause && styles.inputError]}
-                  value={eventForm.cause}
-                  onChangeText={(text) => handleInputChange('cause', text)}
-                  placeholder="e.g., Environment"
-                  placeholderTextColor="#9CA3AF"
-                />
+                <TouchableOpacity 
+                  style={[styles.dropdownButton, formErrors.cause && styles.inputError]}
+                  onPress={() => {
+                    setShowFormCauseDropdown(!showFormCauseDropdown);
+                    setShowFormSkillDropdown(false);
+                    setShowFormEventTypeDropdown(false);
+                    setShowFormDifficultyDropdown(false);
+                    setShowCauseDropdown(false);
+                    setShowSkillDropdown(false);
+                    setShowLocationDropdown(false);
+                  }}
+                >
+                  <Text style={[styles.dropdownButtonText, eventForm.cause.length === 0 && styles.placeholderText]}>
+                    {eventForm.cause.length === 0 ? 'Select causes' : `${eventForm.cause.length} selected`}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showFormCauseDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: 100010, elevation: 100 }]}>
+                    <ScrollView 
+                      style={styles.dropdownScrollView}
+                      showsVerticalScrollIndicator={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {causeOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[styles.dropdownItem, eventForm.cause.includes(option) && styles.selectedItem]}
+                          onPress={() => handleFormCauseSelect(option)}
+                        >
+                          <Text style={[styles.dropdownItemText, eventForm.cause.includes(option) && styles.selectedItemText]}>
+                            {option}
+                          </Text>
+                          {eventForm.cause.includes(option) && (
+                            <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
                 {formErrors.cause && <Text style={styles.errorText}>{formErrors.cause}</Text>}
               </View>
 
               <View style={[styles.inputGroup, styles.halfWidth]}>
-                <Text style={styles.inputLabel}>Required Skill *</Text>
-                <TextInput
-                  style={[styles.textInput, formErrors.skills && styles.inputError]}
-                  value={eventForm.skills}
-                  onChangeText={(text) => handleInputChange('skills', text)}
-                  placeholder="e.g., Physical"
-                  placeholderTextColor="#9CA3AF"
-                />
+                <Text style={styles.inputLabel}>Required Skills *</Text>
+                <TouchableOpacity 
+                  style={[styles.dropdownButton, formErrors.skills && styles.inputError]}
+                  onPress={() => {
+                    setShowFormSkillDropdown(!showFormSkillDropdown);
+                    setShowFormCauseDropdown(false);
+                    setShowFormEventTypeDropdown(false);
+                    setShowFormDifficultyDropdown(false);
+                    setShowCauseDropdown(false);
+                    setShowSkillDropdown(false);
+                    setShowLocationDropdown(false);
+                  }}
+                >
+                  <Text style={[styles.dropdownButtonText, eventForm.skills.length === 0 && styles.placeholderText]}>
+                    {eventForm.skills.length === 0 ? 'Select skills' : `${eventForm.skills.length} selected`}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                {showFormSkillDropdown && (
+                  <View style={[styles.dropdownList, { zIndex: 100009, elevation: 90 }]}>
+                    <ScrollView 
+                      style={styles.dropdownScrollView}
+                      showsVerticalScrollIndicator={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {skillOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[styles.dropdownItem, eventForm.skills.includes(option) && styles.selectedItem]}
+                          onPress={() => handleFormSkillSelect(option)}
+                        >
+                          <Text style={[styles.dropdownItemText, eventForm.skills.includes(option) && styles.selectedItemText]}>
+                            {option}
+                          </Text>
+                          {eventForm.skills.includes(option) && (
+                            <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
                 {formErrors.skills && <Text style={styles.errorText}>{formErrors.skills}</Text>}
               </View>
             </View>
@@ -2114,9 +2431,9 @@ export default function CalendarScreen() {
           <ScrollView style={styles.simpleModalContent} showsVerticalScrollIndicator={false}>
             {selectedEvent ? (
               <View style={styles.simpleEditForm}>
-                  
+                {/* Event Title */}
                 <View style={styles.simpleFormGroup}>
-                  <Text style={styles.simpleFormLabel}>Event Title</Text>
+                  <Text style={styles.simpleFormLabel}>Event Title *</Text>
                   <TextInput
                     style={[styles.simpleFormInput, editFormErrors.title && styles.simpleFormInputError]}
                     value={editForm.title}
@@ -2126,9 +2443,10 @@ export default function CalendarScreen() {
                   />
                   {editFormErrors.title && <Text style={styles.simpleFormError}>{editFormErrors.title}</Text>}
                 </View>
-                
+
+                {/* Description */}
                 <View style={styles.simpleFormGroup}>
-                  <Text style={styles.simpleFormLabel}>Description</Text>
+                  <Text style={styles.simpleFormLabel}>Description *</Text>
                   <TextInput
                     style={[styles.simpleFormInput, styles.simpleFormTextArea, editFormErrors.description && styles.simpleFormInputError]}
                     value={editForm.description}
@@ -2141,10 +2459,11 @@ export default function CalendarScreen() {
                   />
                   {editFormErrors.description && <Text style={styles.simpleFormError}>{editFormErrors.description}</Text>}
                 </View>
-                
+
+                {/* Date and Time Row */}
                 <View style={styles.simpleFormRow}>
                   <View style={styles.simpleFormGroupHalf}>
-                    <Text style={styles.simpleFormLabel}>Date</Text>
+                    <Text style={styles.simpleFormLabel}>Date *</Text>
                     <TextInput
                       style={[styles.simpleFormInput, editFormErrors.date && styles.simpleFormInputError]}
                       value={editForm.date}
@@ -2155,21 +2474,7 @@ export default function CalendarScreen() {
                     {editFormErrors.date && <Text style={styles.simpleFormError}>{editFormErrors.date}</Text>}
                   </View>
                   <View style={styles.simpleFormGroupHalf}>
-                    <Text style={styles.simpleFormLabel}>Location</Text>
-                    <TextInput
-                      style={[styles.simpleFormInput, editFormErrors.location && styles.simpleFormInputError]}
-                      value={editForm.location}
-                      onChangeText={(value) => handleEditInputChange('location', value)}
-                      placeholder="Enter location"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                    {editFormErrors.location && <Text style={styles.simpleFormError}>{editFormErrors.location}</Text>}
-                  </View>
-                </View>
-                
-                <View style={styles.simpleFormRow}>
-                  <View style={styles.simpleFormGroupHalf}>
-                    <Text style={styles.simpleFormLabel}>Start Time</Text>
+                    <Text style={styles.simpleFormLabel}>Start Time *</Text>
                     <TextInput
                       style={[styles.simpleFormInput, editFormErrors.time && styles.simpleFormInputError]}
                       value={editForm.time}
@@ -2179,57 +2484,282 @@ export default function CalendarScreen() {
                     />
                     {editFormErrors.time && <Text style={styles.simpleFormError}>{editFormErrors.time}</Text>}
                   </View>
-                  <View style={styles.simpleFormGroupHalf}>
-                    <Text style={styles.simpleFormLabel}>End Time</Text>
-                    <TextInput
-                      style={[styles.simpleFormInput, editFormErrors.endTime && styles.simpleFormInputError]}
-                      value={editForm.endTime}
-                      onChangeText={(value) => handleEditInputChange('endTime', value)}
-                      placeholder="HH:MM AM/PM"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                    {editFormErrors.endTime && <Text style={styles.simpleFormError}>{editFormErrors.endTime}</Text>}
-                  </View>
                 </View>
-                
-                <View style={styles.simpleFormRow}>
-                  <View style={styles.simpleFormGroupHalf}>
-                    <Text style={styles.simpleFormLabel}>Max Volunteers</Text>
-                    <TextInput
-                      style={[styles.simpleFormInput, editFormErrors.maxParticipants && styles.simpleFormInputError]}
-                      value={editForm.maxParticipants}
-                      onChangeText={(value) => handleEditInputChange('maxParticipants', value)}
-                      placeholder="Enter number"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                    />
-                    {editFormErrors.maxParticipants && <Text style={styles.simpleFormError}>{editFormErrors.maxParticipants}</Text>}
-                  </View>
-                  <View style={styles.simpleFormGroupHalf}>
-                    <Text style={styles.simpleFormLabel}>Cause</Text>
-                    <TextInput
-                      style={[styles.simpleFormInput, editFormErrors.cause && styles.simpleFormInputError]}
-                      value={editForm.cause}
-                      onChangeText={(value) => handleEditInputChange('cause', value)}
-                      placeholder="Enter cause"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                    {editFormErrors.cause && <Text style={styles.simpleFormError}>{editFormErrors.cause}</Text>}
-                  </View>
-                </View>
-                
+
+                {/* End Time */}
                 <View style={styles.simpleFormGroup}>
-                  <Text style={styles.simpleFormLabel}>Skills Required</Text>
+                  <Text style={styles.simpleFormLabel}>End Time (Optional)</Text>
                   <TextInput
-                    style={[styles.simpleFormInput, editFormErrors.skills && styles.simpleFormInputError]}
-                    value={editForm.skills}
-                    onChangeText={(value) => handleEditInputChange('skills', value)}
-                    placeholder="Enter required skills"
+                    style={[styles.simpleFormInput, editFormErrors.endTime && styles.simpleFormInputError]}
+                    value={editForm.endTime}
+                    onChangeText={(value) => handleEditInputChange('endTime', value)}
+                    placeholder="HH:MM AM/PM"
                     placeholderTextColor="#9CA3AF"
                   />
-                  {editFormErrors.skills && <Text style={styles.simpleFormError}>{editFormErrors.skills}</Text>}
+                  {editFormErrors.endTime && <Text style={styles.simpleFormError}>{editFormErrors.endTime}</Text>}
                 </View>
-                
+
+                {/* Location */}
+                <View style={styles.simpleFormGroup}>
+                  <Text style={styles.simpleFormLabel}>Location *</Text>
+                  <TextInput
+                    style={[styles.simpleFormInput, editFormErrors.location && styles.simpleFormInputError]}
+                    value={editForm.location}
+                    onChangeText={(value) => handleEditInputChange('location', value)}
+                    placeholder="Enter event location"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  {editFormErrors.location && <Text style={styles.simpleFormError}>{editFormErrors.location}</Text>}
+                </View>
+
+                {/* Max Volunteers */}
+                <View style={styles.simpleFormGroup}>
+                  <Text style={styles.simpleFormLabel}>Max Volunteers *</Text>
+                  <TextInput
+                    style={[styles.simpleFormInput, editFormErrors.maxParticipants && styles.simpleFormInputError]}
+                    value={editForm.maxParticipants}
+                    onChangeText={(value) => handleEditInputChange('maxParticipants', value)}
+                    placeholder="Enter maximum number of volunteers"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                  />
+                  {editFormErrors.maxParticipants && <Text style={styles.simpleFormError}>{editFormErrors.maxParticipants}</Text>}
+                </View>
+
+                {/* Event Type and Difficulty Row */}
+                <View style={styles.simpleFormRow}>
+                  <View style={styles.simpleFormGroupHalf}>
+                    <Text style={styles.simpleFormLabel}>Event Type *</Text>
+                    <TouchableOpacity 
+                      style={[styles.dropdownButton, editFormErrors.eventType && styles.inputError]}
+                      onPress={() => {
+                        setShowEditEventTypeDropdown(!showEditEventTypeDropdown);
+                        setShowEditDifficultyDropdown(false);
+                        setShowEditCauseDropdown(false);
+                        setShowEditSkillDropdown(false);
+                        setShowCauseDropdown(false);
+                        setShowSkillDropdown(false);
+                        setShowLocationDropdown(false);
+                        setShowFormCauseDropdown(false);
+                        setShowFormSkillDropdown(false);
+                        setShowFormEventTypeDropdown(false);
+                        setShowFormDifficultyDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.dropdownButtonText, !editForm.eventType && styles.placeholderText]}>
+                        {editForm.eventType || 'Select type'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                    </TouchableOpacity>
+                    {showEditEventTypeDropdown && (
+                      <View style={[styles.dropdownList, { zIndex: 100012, elevation: 120 }]}>
+                        <ScrollView 
+                          style={styles.dropdownScrollView}
+                          showsVerticalScrollIndicator={true}
+                          nestedScrollEnabled={true}
+                        >
+                          {eventTypeOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={[styles.dropdownItem, editForm.eventType === option && styles.selectedItem]}
+                              onPress={() => handleEditEventTypeSelect(option)}
+                            >
+                              <Text style={[styles.dropdownItemText, editForm.eventType === option && styles.selectedItemText]}>
+                                {option}
+                              </Text>
+                              {editForm.eventType === option && (
+                                <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                    {editFormErrors.eventType && <Text style={styles.simpleFormError}>{editFormErrors.eventType}</Text>}
+                  </View>
+
+                  <View style={styles.simpleFormGroupHalf}>
+                    <Text style={styles.simpleFormLabel}>Difficulty *</Text>
+                    <TouchableOpacity 
+                      style={[styles.dropdownButton, editFormErrors.difficulty && styles.inputError]}
+                      onPress={() => {
+                        setShowEditDifficultyDropdown(!showEditDifficultyDropdown);
+                        setShowEditEventTypeDropdown(false);
+                        setShowEditCauseDropdown(false);
+                        setShowEditSkillDropdown(false);
+                        setShowCauseDropdown(false);
+                        setShowSkillDropdown(false);
+                        setShowLocationDropdown(false);
+                        setShowFormCauseDropdown(false);
+                        setShowFormSkillDropdown(false);
+                        setShowFormEventTypeDropdown(false);
+                        setShowFormDifficultyDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.dropdownButtonText, !editForm.difficulty && styles.placeholderText]}>
+                        {editForm.difficulty || 'Select level'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                    </TouchableOpacity>
+                    {showEditDifficultyDropdown && (
+                      <View style={[styles.dropdownList, { zIndex: 100011, elevation: 110 }]}>
+                        <ScrollView 
+                          style={styles.dropdownScrollView}
+                          showsVerticalScrollIndicator={true}
+                          nestedScrollEnabled={true}
+                        >
+                          {difficultyOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={[styles.dropdownItem, editForm.difficulty === option && styles.selectedItem]}
+                              onPress={() => handleEditDifficultySelect(option)}
+                            >
+                              <Text style={[styles.dropdownItemText, editForm.difficulty === option && styles.selectedItemText]}>
+                                {option}
+                              </Text>
+                              {editForm.difficulty === option && (
+                                <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                    {editFormErrors.difficulty && <Text style={styles.simpleFormError}>{editFormErrors.difficulty}</Text>}
+                  </View>
+                </View>
+
+                {/* Cause and Skills Row */}
+                <View style={styles.simpleFormRow}>
+                  <View style={styles.simpleFormGroupHalf}>
+                    <Text style={styles.simpleFormLabel}>Cause *</Text>
+                    <TouchableOpacity 
+                      style={[styles.dropdownButton, editFormErrors.cause && styles.inputError]}
+                      onPress={() => {
+                        setShowEditCauseDropdown(!showEditCauseDropdown);
+                        setShowEditSkillDropdown(false);
+                        setShowEditEventTypeDropdown(false);
+                        setShowEditDifficultyDropdown(false);
+                        setShowCauseDropdown(false);
+                        setShowSkillDropdown(false);
+                        setShowLocationDropdown(false);
+                        setShowFormCauseDropdown(false);
+                        setShowFormSkillDropdown(false);
+                        setShowFormEventTypeDropdown(false);
+                        setShowFormDifficultyDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.dropdownButtonText, editForm.cause.length === 0 && styles.placeholderText]}>
+                        {editForm.cause.length === 0 ? 'Select causes' : `${editForm.cause.length} selected`}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                    </TouchableOpacity>
+                    {showEditCauseDropdown && (
+                      <View style={[styles.dropdownList, { zIndex: 100010, elevation: 100 }]}>
+                        <ScrollView 
+                          style={styles.dropdownScrollView}
+                          showsVerticalScrollIndicator={true}
+                          nestedScrollEnabled={true}
+                        >
+                          {causeOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={[styles.dropdownItem, editForm.cause.includes(option) && styles.selectedItem]}
+                              onPress={() => handleEditCauseSelect(option)}
+                            >
+                              <Text style={[styles.dropdownItemText, editForm.cause.includes(option) && styles.selectedItemText]}>
+                                {option}
+                              </Text>
+                              {editForm.cause.includes(option) && (
+                                <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                    {editFormErrors.cause && <Text style={styles.simpleFormError}>{editFormErrors.cause}</Text>}
+                  </View>
+
+                  <View style={styles.simpleFormGroupHalf}>
+                    <Text style={styles.simpleFormLabel}>Required Skills *</Text>
+                    <TouchableOpacity 
+                      style={[styles.dropdownButton, editFormErrors.skills && styles.inputError]}
+                      onPress={() => {
+                        setShowEditSkillDropdown(!showEditSkillDropdown);
+                        setShowEditCauseDropdown(false);
+                        setShowEditEventTypeDropdown(false);
+                        setShowEditDifficultyDropdown(false);
+                        setShowCauseDropdown(false);
+                        setShowSkillDropdown(false);
+                        setShowLocationDropdown(false);
+                        setShowFormCauseDropdown(false);
+                        setShowFormSkillDropdown(false);
+                        setShowFormEventTypeDropdown(false);
+                        setShowFormDifficultyDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.dropdownButtonText, editForm.skills.length === 0 && styles.placeholderText]}>
+                        {editForm.skills.length === 0 ? 'Select skills' : `${editForm.skills.length} selected`}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                    </TouchableOpacity>
+                    {showEditSkillDropdown && (
+                      <View style={[styles.dropdownList, { zIndex: 100009, elevation: 90 }]}>
+                        <ScrollView 
+                          style={styles.dropdownScrollView}
+                          showsVerticalScrollIndicator={true}
+                          nestedScrollEnabled={true}
+                        >
+                          {skillOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option}
+                              style={[styles.dropdownItem, editForm.skills.includes(option) && styles.selectedItem]}
+                              onPress={() => handleEditSkillSelect(option)}
+                            >
+                              <Text style={[styles.dropdownItemText, editForm.skills.includes(option) && styles.selectedItemText]}>
+                                {option}
+                              </Text>
+                              {editForm.skills.includes(option) && (
+                                <Ionicons name="checkmark" size={16} color="#3B82F6" />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                    {editFormErrors.skills && <Text style={styles.simpleFormError}>{editFormErrors.skills}</Text>}
+                  </View>
+                </View>
+
+
+                {/* Age Restriction and Equipment Row */}
+                <View style={styles.simpleFormRow}>
+                  <View style={styles.simpleFormGroupHalf}>
+                    <Text style={styles.simpleFormLabel}>Age Restriction</Text>
+                    <TextInput
+                      style={[styles.simpleFormInput, editFormErrors.ageRestriction && styles.simpleFormInputError]}
+                      value={editForm.ageRestriction}
+                      onChangeText={(value) => handleEditInputChange('ageRestriction', value)}
+                      placeholder="e.g., 18+, 16+"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                    {editFormErrors.ageRestriction && <Text style={styles.simpleFormError}>{editFormErrors.ageRestriction}</Text>}
+                  </View>
+                  <View style={styles.simpleFormGroupHalf}>
+                    <Text style={styles.simpleFormLabel}>Equipment Needed</Text>
+                    <TextInput
+                      style={[styles.simpleFormInput, editFormErrors.equipment && styles.simpleFormInputError]}
+                      value={editForm.equipment}
+                      onChangeText={(value) => handleEditInputChange('equipment', value)}
+                      placeholder="e.g., Gloves, Tools"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                    {editFormErrors.equipment && <Text style={styles.simpleFormError}>{editFormErrors.equipment}</Text>}
+                  </View>
+                </View>
+
+                {/* Event Status */}
                 <View style={styles.simpleFormGroup}>
                   <Text style={styles.simpleFormLabel}>Event Status</Text>
                   <TouchableOpacity 
@@ -3046,6 +3576,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    zIndex: 99999,
+    elevation: 20,
   },
   filterRow: {
     flexDirection: 'row',
@@ -3055,6 +3587,7 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     flex: 1,
     position: 'relative',
+    zIndex: 99999,
   },
   dropdownButton: {
     flexDirection: 'row',
@@ -3081,13 +3614,13 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     borderRadius: 6,
     marginTop: 2,
-    maxHeight: 150,
-    zIndex: 1000,
-    elevation: 5,
+    maxHeight: 200,
+    zIndex: 99999,
+    elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
   },
   dropdownItem: {
     paddingHorizontal: 12,
@@ -3098,6 +3631,18 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 14,
     color: '#111827',
+  },
+  selectedItem: {
+    backgroundColor: '#EBF4FF',
+    borderLeftWidth: 3,
+    borderLeftColor: '#3B82F6',
+  },
+  selectedItemText: {
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  dropdownScrollView: {
+    maxHeight: 180,
   },
   clearFiltersButton: {
     flexDirection: 'row',
