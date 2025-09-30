@@ -31,6 +31,17 @@ const eventParticipantSchema = new mongoose.Schema({
     enum: ['registered', 'confirmed', 'attended', 'no_show', 'cancelled'],
     default: 'registered'
   },
+  attendanceStatus: {
+    type: String,
+    enum: ['pending', 'attended', 'not_attended'],
+    default: 'pending'
+  },
+  attendanceMarkedAt: {
+    type: Date
+  },
+  attendanceMarkedBy: {
+    type: String
+  },
   registrationDate: {
     type: Date,
     default: Date.now
@@ -46,6 +57,51 @@ const eventParticipantSchema = new mongoose.Schema({
     maxlength: 500,
     default: ''
   },
+  feedback: {
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5
+    },
+    feedback: {
+      type: String,
+      default: ''
+    },
+    skills: [{
+      type: String
+    }],
+    givenAt: {
+      type: Date
+    },
+    givenBy: {
+      type: String
+    }
+  },
+  badges: [{
+    badgeType: {
+      type: String,
+      enum: ['participation', 'excellence', 'leadership', 'dedication', 'special', 'teamwork', 'innovation', 'commitment', 'impact', 'mentor'],
+      required: true
+    },
+    badgeName: {
+      type: String,
+      required: true
+    },
+    description: {
+      type: String,
+      default: ''
+    },
+    awardedAt: {
+      type: Date,
+      default: Date.now
+    },
+    awardedBy: {
+      type: String
+    },
+    eventId: {
+      type: String
+    }
+  }],
   isActive: {
     type: Boolean,
     default: true
@@ -84,6 +140,8 @@ eventParticipantSchema.virtual('participantDetails').get(function() {
     checkInTime: this.checkInTime,
     checkOutTime: this.checkOutTime,
     notes: this.notes,
+    feedback: this.feedback,
+    badges: this.badges,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

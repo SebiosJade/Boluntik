@@ -27,11 +27,7 @@ export default function OrganizationDashboard() {
   }, []);
 
   const loadEvents = async () => {
-    console.log('organization home - loadEvents - user object:', user);
-    console.log('organization home - loadEvents - user.id:', user?.id);
-    
     if (!user?.id || user.id.trim() === '') {
-      console.log('organization home - No valid user ID found');
       return;
     }
     
@@ -110,15 +106,6 @@ export default function OrganizationDashboard() {
       const eventDate = new Date(year, month - 1, day);
       eventDate.setHours(0, 0, 0, 0);
       
-      console.log('Event date comparison:', {
-        eventTitle: event.title,
-        eventDateString: event.date,
-        eventDate: eventDate.toISOString(),
-        now: now.toISOString(),
-        isUpcoming: eventDate >= now,
-        status: event.status
-      });
-      
       return eventDate >= now;
     });
     
@@ -172,14 +159,12 @@ export default function OrganizationDashboard() {
 
 
   const handleViewAllEvents = () => {
-    console.log('View all events pressed');
     // Show modal with all events
     setShowViewAllModal(true);
   };
 
 
   const handleQuickAccess = (section: string) => {
-    console.log(`${section} pressed`);
     // Navigate to respective sections
     if (section === 'Crowdfunding') {
       router.push('/(organizationTabs)/crowdfundingorg');
@@ -232,7 +217,6 @@ export default function OrganizationDashboard() {
               ]}
               onPress={() => {
                 // Handle navigation here
-                console.log(`Navigating to ${item.title}`);
                 closeMenu();
                 
                 if (item.id === 'dashboard') {

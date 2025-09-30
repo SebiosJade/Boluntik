@@ -7,7 +7,9 @@ const {
   readEventParticipants, 
   writeEventParticipants,
   findEventById,
+  findAllEvents,
   findEventsByOrganization,
+  findEventsByUser,
   createEvent: createEventInDB,
   updateEvent: updateEventInDB,
   deleteEvent: deleteEventInDB,
@@ -23,17 +25,16 @@ const {
 // Get all events
 const getAllEvents = async (req, res) => {
   try {
-    const events = await readEvents();
-    const participants = await readEventParticipants();
+    const events = await findAllEvents();
     
-    // Add actual participant count to each event
-    const eventsWithParticipants = events.map(event => {
-      const eventParticipants = participants.filter(p => p.eventId === event.id);
+    // Add actual participant count to each event using MongoDB
+    const eventsWithParticipants = await Promise.all(events.map(async (event) => {
+      const participants = await findEventParticipantsByEvent(event.id);
       return {
         ...event,
-        actualParticipants: eventParticipants.length.toString()
+        actualParticipants: participants.length.toString()
       };
-    });
+    }));
     
     res.json(eventsWithParticipants);
   } catch (error) {
@@ -46,23 +47,17 @@ const getAllEvents = async (req, res) => {
 const getEventsByOrganization = async (req, res) => {
   try {
     const { organizationId } = req.params;
-    console.log('getEventsByOrganization - Full req.params:', req.params);
-    console.log('getEventsByOrganization - Full req.url:', req.url);
-    console.log('getEventsByOrganization - Received organizationId:', organizationId);
-    console.log('getEventsByOrganization - organizationId type:', typeof organizationId);
     
-    const events = await readEvents();
-    const participants = await readEventParticipants();
-    const organizationEvents = events.filter(event => event.organizationId === organizationId);
+    const organizationEvents = await findEventsByOrganization(organizationId);
     
-    // Add actual participant count to each event
-    const eventsWithParticipants = organizationEvents.map(event => {
-      const eventParticipants = participants.filter(p => p.eventId === event.id);
+    // Add actual participant count to each event using MongoDB
+    const eventsWithParticipants = await Promise.all(organizationEvents.map(async (event) => {
+      const participants = await findEventParticipantsByEvent(event.id);
       return {
         ...event,
-        actualParticipants: eventParticipants.length.toString()
+        actualParticipants: participants.length.toString()
       };
-    });
+    }));
     
     res.json(eventsWithParticipants);
   } catch (error) {
@@ -75,21 +70,16 @@ const getEventsByOrganization = async (req, res) => {
 const getEventsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log('getEventsByUser - Received userId:', userId);
-    console.log('getEventsByUser - userId type:', typeof userId);
-    console.log('getEventsByUser - userId length:', userId?.length);
-    const events = await readEvents();
-    const participants = await readEventParticipants();
-    const userEvents = events.filter(event => event.createdBy === userId);
+    const userEvents = await findEventsByUser(userId);
     
-    // Add actual participant count to each event
-    const eventsWithParticipants = userEvents.map(event => {
-      const eventParticipants = participants.filter(p => p.eventId === event.id);
+    // Add actual participant count to each event using MongoDB
+    const eventsWithParticipants = await Promise.all(userEvents.map(async (event) => {
+      const participants = await findEventParticipantsByEvent(event.id);
       return {
         ...event,
-        actualParticipants: eventParticipants.length.toString()
+        actualParticipants: participants.length.toString()
       };
-    });
+    }));
     
     res.json(eventsWithParticipants);
   } catch (error) {
@@ -102,8 +92,7 @@ const getEventsByUser = async (req, res) => {
 const getEventById = async (req, res) => {
   try {
     const { id } = req.params;
-    const events = await readEvents();
-    const event = events.find(e => e.id === id);
+    const event = await findEventById(id);
     
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
@@ -118,6 +107,8 @@ const getEventById = async (req, res) => {
 
 // Create new event
 const createEventController = async (req, res) => {
+  console.log('=== CREATE EVENT DEBUG ===');
+  console.log('Request body:', req.body);
   try {
     const {
       title,
@@ -149,9 +140,7 @@ const createEventController = async (req, res) => {
       });
     }
 
-    const events = await readEvents();
-    
-    const newEvent = {
+    const eventData = {
       id: uuidv4(),
       title,
       description: description || '',
@@ -159,9 +148,9 @@ const createEventController = async (req, res) => {
       time,
       endTime: endTime || '',
       location,
-      maxParticipants: maxParticipants || '',
-      eventType: eventType || '',
-      difficulty: difficulty || '',
+      maxParticipants: maxParticipants ? parseInt(maxParticipants) : 50,
+      eventType: eventType || 'volunteer',
+      difficulty: difficulty || 'all levels',
       cause: cause || '',
       skills: skills || '',
       ageRestriction: ageRestriction || '',
@@ -173,22 +162,26 @@ const createEventController = async (req, res) => {
       createdByName: createdByName || '',
       createdByEmail: createdByEmail || '',
       createdByRole: createdByRole || 'organization',
-      status: 'published',
+      status: 'upcoming',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    events.push(newEvent);
-    const success = await writeEvents(events);
-    
-    if (!success) {
-      return res.status(500).json({ error: 'Failed to save event' });
-    }
-
+    console.log('Creating event with data:', eventData);
+    const newEvent = await createEventInDB(eventData);
+    console.log('Created event:', newEvent);
     res.status(201).json(newEvent);
   } catch (error) {
     console.error('Error creating event:', error);
-    res.status(500).json({ error: 'Failed to create event' });
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Failed to create event',
+      details: error.message 
+    });
   }
 };
 
@@ -244,35 +237,31 @@ const joinEvent = async (req, res) => {
       return res.status(400).json({ error: 'User information is required' });
     }
 
-    // Read current participants
-    const participants = await readEventParticipants();
-    
-    // Check if user is already joined
-    const existingParticipation = participants.find(
-      p => p.eventId === eventId && p.userId === userId
+    // Check if event exists and get event details using MongoDB
+    const event = await findEventById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Check if user is already joined using MongoDB
+    const existingParticipants = await findEventParticipantsByEvent(eventId);
+    const existingParticipation = existingParticipants.find(
+      p => p.userId === userId
     );
 
     if (existingParticipation) {
       return res.status(400).json({ error: 'User is already joined to this event' });
     }
 
-    // Read events to check if event exists and get max participants
-    const events = await readEvents();
-    const event = events.find(e => e.id === eventId);
-    
-    if (!event) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-
     // Check if event is full
-    const currentParticipants = participants.filter(p => p.eventId === eventId).length;
+    const currentParticipants = existingParticipants.length;
     const maxParticipants = parseInt(event.maxParticipants) || 0;
     
     if (currentParticipants >= maxParticipants) {
       return res.status(400).json({ error: 'Event is full' });
     }
 
-    // Add participant
+    // Create new participant using MongoDB
     const newParticipant = {
       id: uuidv4(),
       eventId, 
@@ -280,30 +269,22 @@ const joinEvent = async (req, res) => {
       userId,
       userName,
       userEmail,
-     
+      status: 'registered', // Default status for new participants
+      registrationDate: new Date().toISOString(),
       joinedAt: new Date().toISOString()
     };
 
-    participants.push(newParticipant);
-    await writeEventParticipants(participants);
+    const createdParticipant = await createParticipantInDB(newParticipant);
 
-    // Update event's actualParticipants count
-    const updatedEvents = events.map(e => {
-      if (e.id === eventId) {
-        const currentCount = parseInt(e.actualParticipants || '0') || 0;
-        return {
-          ...e,
-          actualParticipants: (currentCount + 1).toString(),
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return e;
+    // Update event's currentParticipants count in MongoDB
+    await updateEventInDB(eventId, {
+      currentParticipants: currentParticipants + 1,
+      updatedAt: new Date().toISOString()
     });
-    await writeEvents(updatedEvents);
 
     res.json({ 
       message: 'Successfully joined event',
-      participant: newParticipant,
+      participant: createdParticipant,
       currentParticipants: currentParticipants + 1
     });
   } catch (error) {
@@ -322,39 +303,29 @@ const unjoinEvent = async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Read current participants
-    const participants = await readEventParticipants();
-    
-    // Find and remove participant
-    const participantIndex = participants.findIndex(
-      p => p.eventId === eventId && p.userId === userId
+    // Check if user is joined using MongoDB
+    const existingParticipants = await findEventParticipantsByEvent(eventId);
+    const existingParticipation = existingParticipants.find(
+      p => p.userId === userId
     );
 
-    if (participantIndex === -1) {
+    if (!existingParticipation) {
       return res.status(404).json({ error: 'User is not joined to this event' });
     }
 
-    const removedParticipant = participants.splice(participantIndex, 1)[0];
-    await writeEventParticipants(participants);
+    // Remove participant using MongoDB
+    await removeParticipantInDB(eventId, userId);
 
-    // Update event's actualParticipants count
-    const events = await readEvents();
-    const updatedEvents = events.map(e => {
-      if (e.id === eventId) {
-        const currentCount = parseInt(e.actualParticipants || '0') || 0;
-        return {
-          ...e,
-          actualParticipants: Math.max(0, currentCount - 1).toString(),
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return e;
+    // Update event's currentParticipants count in MongoDB
+    const currentParticipants = existingParticipants.length - 1;
+    await updateEventInDB(eventId, {
+      currentParticipants: Math.max(0, currentParticipants),
+      updatedAt: new Date().toISOString()
     });
-    await writeEvents(updatedEvents);
 
     res.json({ 
       message: 'Successfully unjoined event',
-      currentParticipants: participants.filter(p => p.eventId === eventId).length
+      currentParticipants: currentParticipants
     });
   } catch (error) {
     console.error('Error unjoining event:', error);
@@ -366,15 +337,8 @@ const unjoinEvent = async (req, res) => {
 const getUserJoinedEvents = async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log('getUserJoinedEvents - Full req.params:', req.params);
-    console.log('getUserJoinedEvents - Full req.url:', req.url);
-    console.log('getUserJoinedEvents - Received userId:', userId);
-    console.log('getUserJoinedEvents - userId type:', typeof userId);
-    console.log('getUserJoinedEvents - userId length:', userId?.length);
-    console.log('getUserJoinedEvents - userId trimmed:', userId?.trim());
     
     if (!userId || userId.trim() === '') {
-      console.log('getUserJoinedEvents - Empty userId detected');
       return res.status(400).json({ error: 'User ID is required' });
     }
     
@@ -403,10 +367,10 @@ const getUserJoinedEvents = async (req, res) => {
 const checkUserParticipation = async (req, res) => {
   try {
     const { eventId, userId } = req.params;
-    const participants = await readEventParticipants();
+    const participants = await findEventParticipantsByEvent(eventId);
     
     const participation = participants.find(
-      p => p.eventId === eventId && p.userId === userId
+      p => p.userId === userId
     );
 
     res.json({ 

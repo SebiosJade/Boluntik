@@ -34,11 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = await AsyncStorage.getItem('auth_token');
       const storedUser = await AsyncStorage.getItem('auth_user');
       const storedRememberMe = await AsyncStorage.getItem('remember_me');
+      console.log('Stored user data:', storedUser);
+      console.log('Stored token:', storedToken ? 'Present' : 'Not found');
       
       if (storedToken && storedUser && storedRememberMe === 'true') {
         const userData = JSON.parse(storedUser);
-        console.log('AuthContext checkStoredAuth - stored userData:', userData);
-        console.log('AuthContext checkStoredAuth - stored userData.id:', userData?.id);
         
         if (!userData || !userData.id) {
           console.error('AuthContext checkStoredAuth - Invalid stored user data:', userData);
@@ -55,7 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(true);
         setIsFirstTime(false);
       } else {
-        console.log('AuthContext checkStoredAuth - No stored auth found');
         setIsAuthenticated(false);
       }
     } catch (error) {
@@ -93,9 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, segments, isNavigationReady]);
 
   const login = async (userData: any, rememberMe: boolean = false) => {
-    console.log('AuthContext login - userData:', userData);
-    console.log('AuthContext login - userData.user:', userData.user);
-    console.log('AuthContext login - userData.user.id:', userData.user?.id);
     
     if (!userData || !userData.user || !userData.user.id) {
       console.error('AuthContext login - Invalid user data received:', userData);

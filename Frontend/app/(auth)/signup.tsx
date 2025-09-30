@@ -91,34 +91,19 @@ export default function SignUpScreen() {
   };
 
   const onSignup = async () => {
-    console.log('=== FRONTEND SIGNUP DEBUG ===');
-    console.log('Signup attempt:', { 
-      name: name?.length || 0, 
-      email: email?.length || 0, 
-      passwordLength: password?.length || 0,
-      confirmPasswordLength: confirmPassword?.length || 0,
-      emailVerified,
-      verificationCodeLength: verificationCode?.length || 0,
-      isVolunteer 
-    });
-    
     if (!name || !email || !password || !confirmPassword) {
-      console.log('ERROR: Missing required fields');
       Alert.alert('Missing info', 'Please fill all fields');
       return;
     }
     if (password.length < 6) {
-      console.log('ERROR: Password too short');
       Alert.alert('Password too short', 'Password must be at least 6 characters long');
       return;
     }
     if (password !== confirmPassword) {
-      console.log('ERROR: Passwords do not match');
       Alert.alert('Passwords do not match', 'Please re-enter your password');
       return;
     }
     if (!emailVerified) {
-      console.log('ERROR: Email not verified');
       Alert.alert('Email Not Verified', 'Please verify your email first');
       return;
     }
@@ -151,6 +136,14 @@ export default function SignUpScreen() {
       
       if (!res.ok) {
         console.log('Signup failed with status:', res.status);
+        console.log('Error details:', data);
+        
+        // Handle validation errors with specific messages
+        if (data?.details && Array.isArray(data.details)) {
+          const errorMessages = data.details.map((error: any) => error.message).join('\n');
+          throw new Error(errorMessages);
+        }
+        
         throw new Error(data?.message || 'Signup failed');
       }
       
@@ -168,7 +161,8 @@ export default function SignUpScreen() {
         ]
       );
     } catch (e: any) {
-      Alert.alert('Signup failed', e?.message || 'Please try again');
+      console.log('Signup error:', e?.message);
+      Alert.alert('Signup Failed', e?.message || 'Please try again');
     } finally {
       setSubmitting(false);
     }

@@ -1,5 +1,4 @@
-const { readUsers, writeUsers, findUserById, updateUser } = require('../../database/dataAccess');
-const jwt = require('jsonwebtoken');
+const { findUserById, updateUser } = require('../../database/dataAccess');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -38,20 +37,11 @@ const upload = multer({
 
 // Get user profile with extended information
 async function getProfile(req, res) {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Missing token' });
-  }
-
   try {
-    const payload = jwt.verify(token, config.jwt.secret);
-    const users = await readUsers();
-    const user = users.find((u) => u.id === payload.sub);
+    const user = await findUserById(req.user.sub);
     
     if (!user) {
-      return res.status(401).json({ message: 'Invalid token' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     // Return extended user profile information
@@ -72,51 +62,24 @@ async function getProfile(req, res) {
         hasCompletedOnboarding: user.hasCompletedOnboarding
       }
     });
-  } catch (e) {
-    res.status(401).json({ message: 'Invalid token' });
+  } catch (error) {
+    console.error('Error getting profile:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Update user profile
 async function updateProfile(req, res) {
-  console.log('=== PROFILE UPDATE DEBUG ===');
-  console.log('Request body:', JSON.stringify(req.body, null, 2));
-  console.log('Request headers:', req.headers);
-  
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  
-  if (!token) {
-    console.log('ERROR: Missing token');
-    return res.status(401).json({ message: 'Missing token' });
-  }
-
   try {
-    const payload = jwt.verify(token, config.jwt.secret);
-    console.log('JWT payload:', payload);
-    
-    const users = await readUsers();
-    const userIndex = users.findIndex((u) => u.id === payload.sub);
-    
-    if (userIndex === -1) {
-      console.log('ERROR: User not found for ID:', payload.sub);
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
-    const user = users[userIndex];
-    console.log('Current user:', { id: user.id, name: user.name, email: user.email });
-    
     const { name, bio, skills, availability, location, phone } = req.body;
-    console.log('Update data:', { name, bio, skills, availability, location, phone });
-
+    
     // Validate required fields
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ message: 'Name is required' });
     }
 
-    // Update user profile fields
-    const updatedUser = {
-      ...user,
+    // Prepare update data
+    const updateData = {
       name: name.trim(),
       bio: bio ? bio.trim() : '',
       skills: Array.isArray(skills) ? skills.filter(skill => skill && skill.trim().length > 0) : [],
@@ -126,15 +89,13 @@ async function updateProfile(req, res) {
       profileUpdatedAt: new Date().toISOString()
     };
 
-    // Update the user in the array
-    users[userIndex] = updatedUser;
+    // Update user in database
+    const updatedUser = await updateUser(req.user.sub, updateData);
     
-    // Save to file
-    console.log('Saving updated user to file...');
-    const saveResult = await writeUsers(users);
-    console.log('Save result:', saveResult);
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    console.log('Profile update successful!');
     res.json({
       message: 'Profile updated successfully',
       user: {
@@ -151,122 +112,66 @@ async function updateProfile(req, res) {
         profileUpdatedAt: updatedUser.profileUpdatedAt
       }
     });
-  } catch (e) {
-    console.error('Update profile error:', e);
-    console.error('Error stack:', e.stack);
+  } catch (error) {
+    console.error('Update profile error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Update user interests (separate endpoint for interests management)
 async function updateInterests(req, res) {
-  console.log('=== INTERESTS UPDATE DEBUG ===');
-  console.log('Request body:', JSON.stringify(req.body, null, 2));
-  console.log('Request headers:', req.headers);
+  console.log('=== UPDATE INTERESTS DEBUG ===');
+  console.log('User ID from token:', req.user?.sub);
+  console.log('Request body:', req.body);
   
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  
-  if (!token) {
-    console.log('ERROR: Missing token');
-    return res.status(401).json({ message: 'Missing token' });
-  }
-
   try {
-    const payload = jwt.verify(token, config.jwt.secret);
-    console.log('JWT payload:', payload);
-    
-    const users = await readUsers();
-    const userIndex = users.findIndex((u) => u.id === payload.sub);
-    
-    if (userIndex === -1) {
-      console.log('ERROR: User not found for ID:', payload.sub);
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
-    const user = users[userIndex];
-    console.log('Current user:', { id: user.id, name: user.name, email: user.email });
-    
     const { interests } = req.body;
-    console.log('Interests data:', interests, 'Type:', typeof interests, 'Length:', interests?.length);
-
+    
     // Validate interests
     if (!Array.isArray(interests)) {
       return res.status(400).json({ message: 'Interests must be an array' });
     }
 
-    // Update user interests
-    const updatedUser = {
-      ...user,
+    // Prepare update data
+    const updateData = {
       interests: interests.filter(interest => interest && interest.trim().length > 0),
       interestsUpdatedAt: new Date().toISOString()
     };
 
-    console.log('Updated interests:', updatedUser.interests);
-    console.log('Updated user:', { id: updatedUser.id, interests: updatedUser.interests });
-
-    // Update the user in the array
-    users[userIndex] = updatedUser;
+    // Update user interests in database
+    console.log('Updating user with data:', updateData);
+    const updatedUser = await updateUser(req.user.sub, updateData);
+    console.log('Update result:', updatedUser);
     
-    // Save to file
-    console.log('Saving updated interests to file...');
-    const saveResult = await writeUsers(users);
-    console.log('Interests save result:', saveResult);
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    console.log('Interests update successful!');
     res.json({
       message: 'Interests updated successfully',
       interests: updatedUser.interests
     });
-  } catch (e) {
-    console.error('Update interests error:', e);
-    console.error('Error stack:', e.stack);
+  } catch (error) {
+    console.error('❌ Update interests error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Upload avatar image
 async function uploadAvatar(req, res) {
-  console.log('=== UPLOAD AVATAR DEBUG ===');
-  console.log('Request headers:', req.headers);
-  console.log('Request file:', req.file);
-  console.log('Request body:', req.body);
-  
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  
-  if (!token) {
-    console.log('ERROR: Missing token');
-    return res.status(401).json({ message: 'Missing token' });
-  }
-
   try {
-    const payload = jwt.verify(token, config.jwt.secret);
-    console.log('JWT payload:', payload);
-    
-    const users = await readUsers();
-    const userIndex = users.findIndex((u) => u.id === payload.sub);
-    
-    if (userIndex === -1) {
-      console.log('ERROR: User not found for ID:', payload.sub);
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
     if (!req.file) {
-      console.log('ERROR: No image file provided');
       return res.status(400).json({ message: 'No image file provided' });
     }
 
-    console.log('File received:', {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      path: req.file.path
-    });
-
-    const user = users[userIndex];
+    // Get current user
+    const user = await findUserById(req.user.sub);
     
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     // Delete old avatar if it exists
     if (user.avatar && user.avatar !== '') {
       const oldAvatarPath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
@@ -277,18 +182,13 @@ async function uploadAvatar(req, res) {
 
     // Update user with new avatar path
     const avatarPath = `/uploads/avatars/${req.file.filename}`;
-    const updatedUser = {
-      ...user,
+    const updateData = {
       avatar: avatarPath,
       profileUpdatedAt: new Date().toISOString()
     };
 
-    users[userIndex] = updatedUser;
-    console.log('Saving updated user with new avatar...');
-    const saveResult = await writeUsers(users);
-    console.log('Avatar save result:', saveResult);
+    const updatedUser = await updateUser(user.id, updateData);
 
-    console.log('Avatar upload successful!');
     res.json({
       message: 'Avatar uploaded successfully',
       avatar: avatarPath,
@@ -300,33 +200,22 @@ async function uploadAvatar(req, res) {
         avatar: updatedUser.avatar
       }
     });
-  } catch (e) {
-    console.error('Upload avatar error:', e);
-    console.error('Error stack:', e.stack);
+  } catch (error) {
+    console.error('Upload avatar error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Delete avatar and reset to default
 async function deleteAvatar(req, res) {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Missing token' });
-  }
-
   try {
-    const payload = jwt.verify(token, config.jwt.secret);
-    const users = await readUsers();
-    const userIndex = users.findIndex((u) => u.id === payload.sub);
+    // Get current user
+    const user = await findUserById(req.user.sub);
     
-    if (userIndex === -1) {
-      return res.status(401).json({ message: 'Invalid token' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = users[userIndex];
-    
     // Delete the current avatar file if it exists and is not the default
     if (user.avatar && user.avatar !== '/uploads/avatars/default-avatar.png') {
       const avatarPath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
@@ -336,14 +225,12 @@ async function deleteAvatar(req, res) {
     }
 
     // Reset to default avatar
-    const updatedUser = {
-      ...user,
+    const updateData = {
       avatar: '/uploads/avatars/default-avatar.png',
       profileUpdatedAt: new Date().toISOString()
     };
 
-    users[userIndex] = updatedUser;
-    await writeUsers(users);
+    const updatedUser = await updateUser(user.id, updateData);
 
     res.json({
       message: 'Avatar deleted successfully',
@@ -356,8 +243,8 @@ async function deleteAvatar(req, res) {
         avatar: updatedUser.avatar
       }
     });
-  } catch (e) {
-    console.error('Delete avatar error:', e);
+  } catch (error) {
+    console.error('Delete avatar error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }

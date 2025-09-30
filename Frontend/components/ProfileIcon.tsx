@@ -39,7 +39,6 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
                     style: 'destructive',
                     onPress: () => {
                         logout();
-                        console.log('Logout confirmed and executed');
                     },
                 },
             ]
@@ -69,7 +68,6 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
                     accessibilityLabel="View notifications"
                     onPress={
                         () => {
-                            console.log('Notifications pressed')
                             router.push('/notification')
                         }
                     }

@@ -1,11 +1,10 @@
 const bcrypt = require('bcryptjs');
-const { readUsers, writeUsers, readEmailVerifications, writeEmailVerifications, findUserByEmail, findEmailVerification, createEmailVerification, updateEmailVerification } = require('../../database/dataAccess');
+const { findUserByEmail, findEmailVerification, createEmailVerification, updateEmailVerification, updateUser, deleteEmailVerification } = require('../../database/dataAccess');
 const { sendVerificationEmail } = require('../services/emailService');
+
 
 // Send password reset code
 async function sendPasswordReset(req, res) {
-  console.log('=== SEND PASSWORD RESET DEBUG ===');
-  console.log('Request body:', JSON.stringify(req.body, null, 2));
   
   const { email } = req.body || {};
 
@@ -15,13 +14,11 @@ async function sendPasswordReset(req, res) {
   }
 
   console.log('Looking up user for email:', email);
-  const users = await readUsers();
-  const user = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
+  const user = await findUserByEmail(email);
   
   console.log('User lookup result:', { 
     userFound: !!user, 
-    userEmail: user?.email,
-    totalUsers: users.length 
+    userEmail: user?.email
   });
   
   if (!user) {
@@ -38,12 +35,9 @@ async function sendPasswordReset(req, res) {
   const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-  const verifications = await readEmailVerifications();
-  
-  // Remove any existing verification for this email
-  const filteredVerifications = verifications.filter(v => v.email !== email.toLowerCase());
-  
-  const verification = {
+  // Create password reset verification using MongoDB
+  const verificationData = {
+    id: require('crypto').randomUUID(),
     email: String(email).toLowerCase(),
     code: resetCode,
     expiresAt: expiresAt.toISOString(),
@@ -51,8 +45,7 @@ async function sendPasswordReset(req, res) {
     type: 'password_reset' // Mark this as a password reset verification
   };
 
-  filteredVerifications.push(verification);
-  await writeEmailVerifications(filteredVerifications);
+  await createEmailVerification(verificationData);
 
   console.log('Generated reset code:', resetCode);
   console.log('Reset code expires at:', expiresAt.toISOString());
@@ -80,35 +73,54 @@ async function verifyPasswordResetCode(req, res) {
   const { email, code } = req.body || {};
 
   if (!email || !code) {
-    return res.status(400).json({ message: 'Email and reset code are required' });
+    return res.status(400).json({ 
+      message: 'Email and reset code are required',
+      details: [
+        { field: 'email', message: !email ? 'Email is required' : 'Email is valid' },
+        { field: 'code', message: !code ? 'Reset code is required' : 'Reset code is provided' }
+      ]
+    });
   }
 
-  const verifications = await readEmailVerifications();
-  const verification = verifications.find(v => 
-    v.email === email.toLowerCase() && 
-    v.code === code && 
-    v.type === 'password_reset'
-  );
+  // Find password reset verification using MongoDB
+  const verification = await findEmailVerification(email.toLowerCase(), code, 'password_reset');
 
   if (!verification) {
-    return res.status(400).json({ message: 'Invalid or expired reset code' });
+    return res.status(400).json({ 
+      message: 'Invalid or expired reset code',
+      details: [
+        { field: 'code', message: 'Reset code is invalid or has expired' },
+        { field: 'email', message: 'No password reset request found for this email' }
+      ]
+    });
   }
 
   // Check if code has expired
   if (new Date() > new Date(verification.expiresAt)) {
-    // Remove expired verification
-    const filteredVerifications = verifications.filter(v => v.email !== email.toLowerCase());
-    await writeEmailVerifications(filteredVerifications);
-    return res.status(400).json({ message: 'Reset code has expired' });
+    return res.status(400).json({ 
+      message: 'Reset code has expired',
+      details: [
+        { field: 'code', message: 'Reset code has expired. Please request a new one' },
+        { field: 'expiresAt', message: `Code expired at ${verification.expiresAt}` }
+      ]
+    });
   }
 
-  // Mark verification as verified but don't remove it yet (will be removed during password reset)
-  const updatedVerifications = verifications.map(v => 
-    v.email === email.toLowerCase() && v.code === code && v.type === 'password_reset'
-      ? { ...v, verified: true, verifiedAt: new Date().toISOString() }
-      : v
-  );
-  await writeEmailVerifications(updatedVerifications);
+  // Check if code has already been used
+  if (verification.isUsed) {
+    return res.status(400).json({ 
+      message: 'Reset code has already been used',
+      details: [
+        { field: 'code', message: 'This reset code has already been used. Please request a new one' }
+      ]
+    });
+  }
+
+  // Mark verification as verified using MongoDB
+  await updateEmailVerification(email.toLowerCase(), { 
+    verified: true, 
+    verifiedAt: new Date().toISOString() 
+  });
 
   res.json({ 
     success: true, 
@@ -121,65 +133,119 @@ async function verifyPasswordResetCode(req, res) {
 async function resetPassword(req, res) {
   const { email, code, newPassword } = req.body || {};
 
+  // Enhanced validation with specific error messages
   if (!email || !code || !newPassword) {
-    return res.status(400).json({ message: 'Email, reset code, and new password are required' });
+    const details = [];
+    if (!email) details.push({ field: 'email', message: 'Email is required' });
+    if (!code) details.push({ field: 'code', message: 'Reset code is required' });
+    if (!newPassword) details.push({ field: 'newPassword', message: 'New password is required' });
+    
+    return res.status(400).json({ 
+      message: 'Missing required fields',
+      details 
+    });
   }
 
+  // Validate password strength
   if (newPassword.length < 6) {
-    return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+    return res.status(400).json({ 
+      message: 'Password is too short',
+      details: [
+        { field: 'newPassword', message: 'Password must be at least 6 characters long' }
+      ]
+    });
   }
 
-  // Verify the reset code
-  const verifications = await readEmailVerifications();
-  const verification = verifications.find(v => 
-    v.email === email.toLowerCase() && 
-    v.code === code && 
-    v.type === 'password_reset'
-  );
+  if (newPassword.length > 128) {
+    return res.status(400).json({ 
+      message: 'Password is too long',
+      details: [
+        { field: 'newPassword', message: 'Password cannot be longer than 128 characters' }
+      ]
+    });
+  }
+
+  // Verify the reset code using MongoDB
+  const verification = await findEmailVerification(email.toLowerCase(), code, 'password_reset');
 
   if (!verification) {
-    return res.status(400).json({ message: 'Invalid or expired reset code' });
+    return res.status(400).json({ 
+      message: 'Invalid or expired reset code',
+      details: [
+        { field: 'code', message: 'Reset code is invalid or has expired' },
+        { field: 'email', message: 'No password reset request found for this email' }
+      ]
+    });
   }
 
   // Check if code has expired
   if (new Date() > new Date(verification.expiresAt)) {
-    // Remove expired verification
-    const filteredVerifications = verifications.filter(v => v.email !== email.toLowerCase());
-    await writeEmailVerifications(filteredVerifications);
-    return res.status(400).json({ message: 'Reset code has expired' });
+    return res.status(400).json({ 
+      message: 'Reset code has expired',
+      details: [
+        { field: 'code', message: 'Reset code has expired. Please request a new one' },
+        { field: 'expiresAt', message: `Code expired at ${verification.expiresAt}` }
+      ]
+    });
   }
 
   // Check if verification has been verified
   if (!verification.verified) {
-    return res.status(400).json({ message: 'Reset code verification required. Please verify your reset code first.' });
+    return res.status(400).json({ 
+      message: 'Reset code verification required',
+      details: [
+        { field: 'code', message: 'Please verify your reset code first before resetting password' }
+      ]
+    });
   }
 
-  // Find and update user
-  const users = await readUsers();
-  const userIndex = users.findIndex((u) => u.email.toLowerCase() === String(email).toLowerCase());
+  // Check if code has already been used
+  if (verification.isUsed) {
+    return res.status(400).json({ 
+      message: 'Reset code has already been used',
+      details: [
+        { field: 'code', message: 'This reset code has already been used. Please request a new one' }
+      ]
+    });
+  }
+
+  // Find user using MongoDB
+  const user = await findUserByEmail(email);
   
-  if (userIndex < 0) {
-    return res.status(404).json({ message: 'User not found' });
+  if (!user) {
+    return res.status(404).json({ 
+      message: 'User not found',
+      details: [
+        { field: 'email', message: 'No user found with this email address' }
+      ]
+    });
+  }
+
+  // Check if new password is the same as current password
+  const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+  if (isSamePassword) {
+    return res.status(400).json({ 
+      message: 'New password must be different',
+      details: [
+        { field: 'newPassword', message: 'New password must be different from your current password' }
+      ]
+    });
   }
 
   // Hash new password
   const newPasswordHash = await bcrypt.hash(newPassword, 10);
   
-  // Update user's password
-  users[userIndex] = { 
-    ...users[userIndex], 
+  // Update user's password using MongoDB
+  await updateUser(user.id, {
     passwordHash: newPasswordHash,
     passwordChangedAt: new Date().toISOString()
-  };
-  
-  await writeUsers(users);
+  });
 
-  // Remove used verification
-  const filteredVerifications = verifications.filter(v => v.email !== email.toLowerCase());
-  await writeEmailVerifications(filteredVerifications);
+  // Delete the email verification record after successful password reset
+  await deleteEmailVerification(email.toLowerCase());
 
   // Log the password reset for audit purposes
-  console.log(`Password reset for user: ${email} (ID: ${users[userIndex].id})`);
+  console.log(`Password reset for user: ${email} (ID: ${user.id}) - Email verification record deleted`);
 
   res.json({ 
     success: true, 

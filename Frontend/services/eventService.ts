@@ -55,10 +55,6 @@ export interface CreateEventData {
 class EventService {
   private   async makeRequest(url: string, options: RequestInit = {}) {
     try {
-      console.log('Making API request to:', url);
-      console.log('Request options:', options);
-      console.log('Request method:', options.method || 'GET');
-      console.log('Call stack:', new Error().stack);
       
       const response = await fetch(url, {
         headers: {
@@ -68,8 +64,6 @@ class EventService {
         ...options,
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -78,7 +72,6 @@ class EventService {
       }
 
       const data = await response.json();
-      console.log('Response data:', data);
       return data;
     } catch (error) {
       console.error('API request failed:', error);
@@ -99,17 +92,12 @@ class EventService {
   }
 
   async getEventsByUser(userId: string): Promise<Event[]> {
-    console.log('getEventsByUser called with userId:', userId);
-    console.log('userId type:', typeof userId);
-    console.log('userId length:', userId?.length);
-    console.log('userId encoded:', encodeURIComponent(userId || ''));
     
     if (!userId || userId.trim() === '') {
       throw new Error('User ID is required');
     }
     
     const url = API.events.getByUser(userId);
-    console.log('Final URL:', url);
     return this.makeRequest(url);
   }
 
@@ -151,23 +139,29 @@ class EventService {
 
   // Get user's joined events
   async getUserJoinedEvents(userId: string): Promise<Event[]> {
-    console.log('getUserJoinedEvents called with userId:', userId);
-    console.log('userId type:', typeof userId);
-    console.log('userId length:', userId?.length);
-    console.log('userId encoded:', encodeURIComponent(userId || ''));
     
     if (!userId || userId.trim() === '') {
       throw new Error('User ID is required');
     }
     
     const url = API.events.getUserJoined(userId);
-    console.log('Final URL:', url);
     return this.makeRequest(url);
   }
 
   // Check if user has joined an event
   async checkUserParticipation(eventId: string, userId: string): Promise<{ hasJoined: boolean; joinedAt: string | null }> {
     return this.makeRequest(API.events.checkParticipation(eventId, userId));
+  }
+
+  // Get user achievements (badges and feedback)
+  async getUserAchievements(userId: string): Promise<any> {
+    
+    if (!userId || userId.trim() === '') {
+      throw new Error('User ID is required');
+    }
+    
+    const url = API.events.getAchievements(userId);
+    return this.makeRequest(url);
   }
 }
 

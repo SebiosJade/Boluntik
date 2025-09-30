@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Alert,
-  Linking,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import React, { useState } from 'react';
+import {
+    Alert,
+    Linking,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { PHILIPPINES_LOCATIONS, getBarangaysForCity } from '../constants/philippinesLocations';
 
 interface EditProfileModalProps {
@@ -85,7 +85,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         longitude: location.coords.longitude,
       });
 
-      console.log('Enhanced GPS Debug - Full address:', address);
 
       if (address.length > 0) {
         const addr = address[0];
@@ -96,24 +95,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         const subregion = addr.subregion;
         const district = addr.district;
         
-        console.log('Enhanced GPS Debug - City:', city);
-        console.log('Enhanced GPS Debug - Region:', region);
-        console.log('Enhanced GPS Debug - Street:', street);
-        console.log('Enhanced GPS Debug - Name:', name);
-        console.log('Enhanced GPS Debug - Subregion:', subregion);
-        console.log('Enhanced GPS Debug - District:', district);
         
         if (city && region) {
           // Set the detected city for Quick Select
           setDetectedCity(city);
-          console.log('Enhanced GPS Debug - Detected city set for Quick Select:', city);
           
           // Try to find the most specific location match
           let bestMatch = '';
           
           // Enhanced matching with multiple strategies
           const searchTerms = [street, name, subregion, district].filter(Boolean);
-          console.log('Enhanced GPS Debug - Search terms:', searchTerms);
           
           // Strategy 1: Direct barangay name matching
           for (const term of searchTerms) {
@@ -123,11 +114,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 location.toLowerCase().includes(term.toLowerCase()) &&
                 location.toLowerCase().includes(city.toLowerCase())
               );
-              console.log(`Enhanced GPS Debug - Exact matches for "${term}":`, exactMatches);
-              
               if (exactMatches.length > 0) {
                 bestMatch = exactMatches[0];
-                console.log('Enhanced GPS Debug - Exact match found:', bestMatch);
                 break;
               }
               
@@ -143,10 +131,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         locationLower.includes(`${termLower} barangay`));
               });
               
-              console.log(`Enhanced GPS Debug - Partial matches for "${term}":`, partialMatches);
               if (partialMatches.length > 0) {
                 bestMatch = partialMatches[0];
-                console.log('Enhanced GPS Debug - Partial match found:', bestMatch);
                 break;
               }
             }
@@ -155,21 +141,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           // Strategy 2: Always try to get a specific barangay for the city
           if (!bestMatch) {
             const cityBarangays = getBarangaysForCity(city);
-            console.log('Enhanced GPS Debug - City barangays:', cityBarangays);
             
             if (cityBarangays.length > 0) {
               // Try to match with subregion or district first
               if (subregion || district) {
                 const searchTerm = subregion || district;
-                console.log('Enhanced GPS Debug - Trying subregion/district match:', searchTerm);
                 if (searchTerm) {
                   const matches = cityBarangays.filter(barangay => 
                     barangay.toLowerCase().includes(searchTerm.toLowerCase())
                   );
-                  console.log('Enhanced GPS Debug - Subregion/district matches:', matches);
                   if (matches.length > 0) {
                     bestMatch = matches[0];
-                    console.log('Enhanced GPS Debug - Subregion/district best match:', bestMatch);
                   }
                 }
               }
@@ -185,7 +167,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     );
                     if (matches.length > 0) {
                       bestMatch = matches[0];
-                      console.log('Enhanced GPS Debug - Found barangay match with term:', term, bestMatch);
                       break;
                     }
                   }
@@ -195,13 +176,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               // If still no match, use the first barangay as default (prioritize barangay over city)
               if (!bestMatch) {
                 bestMatch = cityBarangays[0];
-                console.log('Enhanced GPS Debug - Using first barangay as default:', bestMatch);
               }
             }
           }
           
           // Set the location - ALWAYS prioritize barangay over city
-          console.log('Enhanced GPS Debug - Final best match:', bestMatch);
           if (bestMatch) {
             // Format the location as "Barangay, City, Province"
             let formattedLocation = bestMatch;
@@ -259,7 +238,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               }
               
               formattedLocation = `${barangayName}, ${cityName}, ${province}`;
-              console.log('Enhanced GPS Debug - Formatted location:', formattedLocation);
             }
             
             updateField('location', formattedLocation);
@@ -267,7 +245,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           } else {
             // Only fallback to city if absolutely no barangays are available
             const fullLocation = `${city}, ${region}`;
-            console.log('Enhanced GPS Debug - No barangays available, fallback to city only:', fullLocation);
             updateField('location', fullLocation);
             Alert.alert('Success', `Location set to: ${fullLocation}`);
           }

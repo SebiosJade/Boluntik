@@ -18,8 +18,8 @@ const config = {
   
   // Database Configuration
   database: {
-    url: process.env.MONGODB_URI || process.env.DATABASE_URL,
-    type: process.env.DATABASE_TYPE || 'file', // 'file', 'mongodb'
+    url: process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb://localhost:27017/voluntech',
+    type: process.env.DATABASE_TYPE || 'mongodb', // 'file', 'mongodb'
     options: {
       useNewUrlParser: true,
       useUnifiedTopology: true,

@@ -1,11 +1,14 @@
 const jwt = require('jsonwebtoken');
-const { readUsers, writeUsers, findUserById, updateUser } = require('../../database/dataAccess');
+const { findUserById, updateUser } = require('../../database/dataAccess');
 const config = require('../../config'); // Use config instead of direct env access
+const { INTERESTS, getValidInterestIds } = require('../../constants/interests');
 
 // Get user interests
 async function getUserInterests(req, res) {
+  console.log('=== GET USER INTERESTS DEBUG ===');
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  console.log('Token present:', !!token);
   
   if (!token) {
     return res.status(401).json({ message: 'Missing token' });
@@ -13,8 +16,9 @@ async function getUserInterests(req, res) {
 
   try {
     const payload = jwt.verify(token, config.jwt.secret);
-    const users = await readUsers();
-    const user = users.find((u) => u.id === payload.sub);
+    console.log('Token payload:', payload);
+    const user = await findUserById(payload.sub);
+    console.log('Found user:', user);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -32,8 +36,11 @@ async function getUserInterests(req, res) {
 
 // Update user interests
 async function updateUserInterests(req, res) {
+  console.log('=== UPDATE USER INTERESTS DEBUG ===');
+  console.log('Request body:', req.body);
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  console.log('Token present:', !!token);
   
   if (!token) {
     return res.status(401).json({ message: 'Missing token' });
@@ -45,12 +52,8 @@ async function updateUserInterests(req, res) {
     return res.status(400).json({ message: 'Interests must be an array' });
   }
 
-  // Validate interest IDs
-  const validInterests = [
-    'community', 'health', 'human-rights', 'animals', 'disaster', 
-    'tech', 'arts', 'religious', 'education', 'environment'
-  ];
-
+  // Validate interest IDs using shared configuration
+  const validInterests = getValidInterestIds();
   const invalidInterests = interests.filter(interest => !validInterests.includes(interest));
   if (invalidInterests.length > 0) {
     return res.status(400).json({ 
@@ -61,22 +64,22 @@ async function updateUserInterests(req, res) {
 
   try {
     const payload = jwt.verify(token, config.jwt.secret);
-    const users = await readUsers();
-    const userIndex = users.findIndex((u) => u.id === payload.sub);
+    console.log('Token payload:', payload);
+    const user = await findUserById(payload.sub);
+    console.log('Found user:', user);
     
-    if (userIndex < 0) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update user interests and onboarding status
-    users[userIndex] = {
-      ...users[userIndex],
+    // Update user interests and onboarding status using MongoDB
+    console.log('Updating user interests:', interests);
+    await updateUser(user.id, {
       interests: interests,
       hasCompletedOnboarding: true,
       interestsUpdatedAt: new Date().toISOString()
-    };
+    });
 
-    await writeUsers(users);
 
     res.json({ 
       success: true,
@@ -92,20 +95,7 @@ async function updateUserInterests(req, res) {
 
 // Get all available interests (for reference)
 async function getAvailableInterests(req, res) {
-  const interests = [
-    { id: 'community', title: 'Community Services', icon: 'heart', color: '#EF4444', iconType: 'ionicons' },
-    { id: 'health', title: 'Health', icon: 'medical', color: '#10B981', iconType: 'ionicons' },
-    { id: 'human-rights', title: 'Human Rights', icon: 'fist-raised', color: '#F97316', iconType: 'fontawesome5' },
-    { id: 'animals', title: 'Animals', icon: 'paw', color: '#8B5CF6', iconType: 'fontawesome5' },
-    { id: 'disaster', title: 'Disaster Relief', icon: 'ambulance', color: '#EF4444', iconType: 'fontawesome5' },
-    { id: 'tech', title: 'Tech', icon: 'code', color: '#3B82F6', iconType: 'ionicons' },
-    { id: 'arts', title: 'Arts & Culture', icon: 'palette', color: '#EC4899', iconType: 'ionicons' },
-    { id: 'religious', title: 'Religious', icon: 'pray', color: '#F97316', iconType: 'fontawesome5' },
-    { id: 'education', title: 'Education', icon: 'book-open', color: '#3B82F6', iconType: 'ionicons' },
-    { id: 'environment', title: 'Environment', icon: 'leaf', color: '#10B981', iconType: 'ionicons' },
-  ];
-
-  res.json({ interests });
+  res.json({ interests: INTERESTS });
 }
 
 module.exports = {

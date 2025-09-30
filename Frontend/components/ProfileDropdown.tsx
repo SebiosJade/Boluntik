@@ -41,7 +41,6 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
           style: 'destructive',
           onPress: () => {
             logout();
-            console.log('Logout confirmed and executed');
           },
         },
       ]
@@ -72,7 +71,6 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
           accessibilityRole="button"
           accessibilityLabel="View notifications"
           onPress={() => {
-            console.log('Notifications pressed')
             router.push('/notification')
           }}
         >

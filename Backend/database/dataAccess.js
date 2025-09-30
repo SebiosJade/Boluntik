@@ -28,7 +28,6 @@ class DataAccess {
         const users = await User.find({ isActive: true });
         return users.map(user => user.toJSON());
       } catch (error) {
-        console.error('Error reading users from MongoDB:', error);
         throw error;
       }
     } else {
@@ -41,7 +40,6 @@ class DataAccess {
         }
         return [];
       } catch (error) {
-        console.error('Error reading users from file:', error);
         return [];
       }
     }
@@ -52,10 +50,8 @@ class DataAccess {
       try {
         // For MongoDB, we'll update users individually
         // This method is mainly used for bulk operations during migration
-        console.log('MongoDB writeUsers called - this should be replaced with individual user operations');
         return { success: true };
       } catch (error) {
-        console.error('Error writing users to MongoDB:', error);
         throw error;
       }
     } else {
@@ -65,7 +61,6 @@ class DataAccess {
         await fs.writeJson(USERS_FILE, users, { spaces: 2 });
         return { success: true };
       } catch (error) {
-        console.error('Error writing users to file:', error);
         throw error;
       }
     }
@@ -77,7 +72,6 @@ class DataAccess {
         const user = await User.findOne({ id: userId, isActive: true });
         return user ? user.toJSON() : null;
       } catch (error) {
-        console.error('Error finding user by ID in MongoDB:', error);
         throw error;
       }
     } else {
@@ -92,7 +86,6 @@ class DataAccess {
         const user = await User.findOne({ email: email.toLowerCase(), isActive: true });
         return user ? user.toJSON() : null;
       } catch (error) {
-        console.error('Error finding user by email in MongoDB:', error);
         throw error;
       }
     } else {
@@ -108,7 +101,6 @@ class DataAccess {
         await user.save();
         return user.toJSON();
       } catch (error) {
-        console.error('Error creating user in MongoDB:', error);
         throw error;
       }
     } else {
@@ -129,7 +121,6 @@ class DataAccess {
         );
         return user ? user.toJSON() : null;
       } catch (error) {
-        console.error('Error updating user in MongoDB:', error);
         throw error;
       }
     } else {
@@ -154,7 +145,6 @@ class DataAccess {
         );
         return user ? user.toJSON() : null;
       } catch (error) {
-        console.error('Error deleting user in MongoDB:', error);
         throw error;
       }
     } else {
@@ -173,7 +163,6 @@ class DataAccess {
         const events = await Event.find({ isActive: true });
         return events.map(event => event.toJSON());
       } catch (error) {
-        console.error('Error reading events from MongoDB:', error);
         throw error;
       }
     } else {
@@ -185,7 +174,6 @@ class DataAccess {
         }
         return [];
       } catch (error) {
-        console.error('Error reading events from file:', error);
         return [];
       }
     }
@@ -197,7 +185,6 @@ class DataAccess {
         console.log('MongoDB writeEvents called - this should be replaced with individual event operations');
         return { success: true };
       } catch (error) {
-        console.error('Error writing events to MongoDB:', error);
         throw error;
       }
     } else {
@@ -206,7 +193,6 @@ class DataAccess {
         await fs.writeJson(EVENTS_FILE, events, { spaces: 2 });
         return { success: true };
       } catch (error) {
-        console.error('Error writing events to file:', error);
         throw error;
       }
     }
@@ -218,7 +204,6 @@ class DataAccess {
         const event = await Event.findOne({ id: eventId, isActive: true });
         return event ? event.toJSON() : null;
       } catch (error) {
-        console.error('Error finding event by ID in MongoDB:', error);
         throw error;
       }
     } else {
@@ -227,18 +212,53 @@ class DataAccess {
     }
   }
 
+  async findAllEvents() {
+    if (this.isMongoDB) {
+      try {
+        const events = await Event.find({ isActive: true }).sort({ createdAt: -1 });
+        return events.map(event => event.toJSON());
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      const events = await this.readEvents();
+      return events.filter(event => event.isActive !== false);
+    }
+  }
+
   async findEventsByOrganization(organizationId) {
     if (this.isMongoDB) {
       try {
-        const events = await Event.findByOrganization(organizationId);
+        const events = await Event.find({ organizationId, isActive: true }).sort({ createdAt: -1 });
         return events.map(event => event.toJSON());
       } catch (error) {
-        console.error('Error finding events by organization in MongoDB:', error);
         throw error;
       }
     } else {
       const events = await this.readEvents();
       return events.filter(event => event.organizationId === organizationId);
+    }
+  }
+
+  async findEventsByUser(userId) {
+    if (this.isMongoDB) {
+      try {
+        // Find events where user is either the creator or the organization
+        const events = await Event.find({ 
+          $or: [
+            { createdBy: userId, isActive: true },
+            { organizationId: userId, isActive: true }
+          ]
+        }).sort({ createdAt: -1 });
+        return events.map(event => event.toJSON());
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      const events = await this.readEvents();
+      return events.filter(event => 
+        event.createdBy === userId || event.organizationId === userId
+      );
     }
   }
 
@@ -249,7 +269,6 @@ class DataAccess {
         await event.save();
         return event.toJSON();
       } catch (error) {
-        console.error('Error creating event in MongoDB:', error);
         throw error;
       }
     } else {
@@ -270,7 +289,6 @@ class DataAccess {
         );
         return event ? event.toJSON() : null;
       } catch (error) {
-        console.error('Error updating event in MongoDB:', error);
         throw error;
       }
     } else {
@@ -296,7 +314,6 @@ class DataAccess {
         );
         return event ? event.toJSON() : null;
       } catch (error) {
-        console.error('Error deleting event in MongoDB:', error);
         throw error;
       }
     } else {
@@ -319,7 +336,6 @@ class DataAccess {
         const verifications = await EmailVerification.find({ isActive: true });
         return verifications.map(verification => verification.toJSON());
       } catch (error) {
-        console.error('Error reading email verifications from MongoDB:', error);
         throw error;
       }
     } else {
@@ -331,7 +347,6 @@ class DataAccess {
         }
         return [];
       } catch (error) {
-        console.error('Error reading email verifications from file:', error);
         return [];
       }
     }
@@ -343,7 +358,6 @@ class DataAccess {
         console.log('MongoDB writeEmailVerifications called - this should be replaced with individual verification operations');
         return { success: true };
       } catch (error) {
-        console.error('Error writing email verifications to MongoDB:', error);
         throw error;
       }
     } else {
@@ -352,7 +366,6 @@ class DataAccess {
         await fs.writeJson(EMAIL_VERIFICATIONS_FILE, verifications, { spaces: 2 });
         return { success: true };
       } catch (error) {
-        console.error('Error writing email verifications to file:', error);
         throw error;
       }
     }
@@ -365,7 +378,6 @@ class DataAccess {
         await verification.save();
         return verification.toJSON();
       } catch (error) {
-        console.error('Error creating email verification in MongoDB:', error);
         throw error;
       }
     } else {
@@ -379,10 +391,17 @@ class DataAccess {
   async findEmailVerification(email, code, type = 'email_verification') {
     if (this.isMongoDB) {
       try {
-        const verification = await EmailVerification.findValidVerification(email, code, type);
+        // Find verification with matching code (can be verified or unverified)
+        const verification = await EmailVerification.findOne({
+          email: email.toLowerCase(),
+          code,
+          type,
+          isActive: true,
+          expiresAt: { $gt: new Date() },
+          attempts: { $lt: 5 }
+        });
         return verification ? verification.toJSON() : null;
       } catch (error) {
-        console.error('Error finding email verification in MongoDB:', error);
         throw error;
       }
     } else {
@@ -397,6 +416,37 @@ class DataAccess {
     }
   }
 
+  async findVerifiedEmailVerification(email, code, type = 'email_verification') {
+    if (this.isMongoDB) {
+      try {
+        // Find verified verification with matching code
+        const verification = await EmailVerification.findOne({
+          email: email.toLowerCase(),
+          code,
+          type,
+          verified: true,
+          isActive: true,
+          expiresAt: { $gt: new Date() },
+          attempts: { $lt: 5 }
+        });
+        return verification ? verification.toJSON() : null;
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      const verifications = await this.readEmailVerifications();
+      return verifications.find(v => 
+        v.email === email.toLowerCase() && 
+        v.code === code && 
+        v.type === type &&
+        v.verified === true &&
+        v.isActive !== false &&
+        new Date(v.expiresAt) > new Date() &&
+        v.attempts < 5
+      ) || null;
+    }
+  }
+
   async updateEmailVerification(email, updateData) {
     if (this.isMongoDB) {
       try {
@@ -407,7 +457,6 @@ class DataAccess {
         );
         return verification ? verification.toJSON() : null;
       } catch (error) {
-        console.error('Error updating email verification in MongoDB:', error);
         throw error;
       }
     } else {
@@ -422,6 +471,25 @@ class DataAccess {
     }
   }
 
+  async deleteEmailVerification(email) {
+    if (this.isMongoDB) {
+      try {
+        const result = await EmailVerification.deleteOne({ email: email.toLowerCase() });
+        return result.deletedCount > 0;
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      const verifications = await this.readEmailVerifications();
+      const filteredVerifications = verifications.filter(v => v.email !== email.toLowerCase());
+      if (filteredVerifications.length !== verifications.length) {
+        await this.writeEmailVerifications(filteredVerifications);
+        return true;
+      }
+      return false;
+    }
+  }
+
   // ==================== EVENT PARTICIPANT OPERATIONS ====================
 
   async readEventParticipants() {
@@ -430,7 +498,6 @@ class DataAccess {
         const participants = await EventParticipant.find({ isActive: true });
         return participants.map(participant => participant.toJSON());
       } catch (error) {
-        console.error('Error reading event participants from MongoDB:', error);
         throw error;
       }
     } else {
@@ -442,7 +509,6 @@ class DataAccess {
         }
         return [];
       } catch (error) {
-        console.error('Error reading event participants from file:', error);
         return [];
       }
     }
@@ -454,7 +520,6 @@ class DataAccess {
         console.log('MongoDB writeEventParticipants called - this should be replaced with individual participant operations');
         return { success: true };
       } catch (error) {
-        console.error('Error writing event participants to MongoDB:', error);
         throw error;
       }
     } else {
@@ -463,7 +528,6 @@ class DataAccess {
         await fs.writeJson(EVENT_PARTICIPANTS_FILE, participants, { spaces: 2 });
         return { success: true };
       } catch (error) {
-        console.error('Error writing event participants to file:', error);
         throw error;
       }
     }
@@ -475,7 +539,6 @@ class DataAccess {
         const participants = await EventParticipant.findByEvent(eventId);
         return participants.map(participant => participant.toJSON());
       } catch (error) {
-        console.error('Error finding event participants in MongoDB:', error);
         throw error;
       }
     } else {
@@ -490,7 +553,6 @@ class DataAccess {
         const participants = await EventParticipant.findUserJoinedEvents(userId);
         return participants.map(participant => participant.toJSON());
       } catch (error) {
-        console.error('Error finding user event participants in MongoDB:', error);
         throw error;
       }
     } else {
@@ -506,7 +568,6 @@ class DataAccess {
         await participant.save();
         return participant.toJSON();
       } catch (error) {
-        console.error('Error creating event participant in MongoDB:', error);
         throw error;
       }
     } else {
@@ -520,14 +581,12 @@ class DataAccess {
   async removeEventParticipant(eventId, userId) {
     if (this.isMongoDB) {
       try {
-        const participant = await EventParticipant.findOneAndUpdate(
-          { eventId, userId },
-          { isActive: false, updatedAt: new Date() },
-          { new: true }
+        const participant = await EventParticipant.findOneAndDelete(
+          { eventId, userId }
         );
         return participant ? participant.toJSON() : null;
       } catch (error) {
-        console.error('Error removing event participant in MongoDB:', error);
+        console.error('Error removing event participant:', error);
         throw error;
       }
     } else {
@@ -535,6 +594,30 @@ class DataAccess {
       const filteredParticipants = participants.filter(p => !(p.eventId === eventId && p.userId === userId));
       await this.writeEventParticipants(filteredParticipants);
       return true;
+    }
+  }
+
+  async updateEventParticipant(eventId, userId, updateData) {
+    if (this.isMongoDB) {
+      try {
+        const participant = await EventParticipant.findOneAndUpdate(
+          { eventId, userId },
+          { ...updateData, updatedAt: new Date() },
+          { new: true }
+        );
+        return participant ? participant.toJSON() : null;
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      const participants = await this.readEventParticipants();
+      const participantIndex = participants.findIndex(p => p.eventId === eventId && p.userId === userId);
+      if (participantIndex >= 0) {
+        participants[participantIndex] = { ...participants[participantIndex], ...updateData };
+        await this.writeEventParticipants(participants);
+        return participants[participantIndex];
+      }
+      return null;
     }
   }
 }
@@ -561,17 +644,22 @@ module.exports = {
   deleteUser: (userId) => dataAccess.deleteUser(userId),
   
   findEventById: (eventId) => dataAccess.findEventById(eventId),
+  findAllEvents: () => dataAccess.findAllEvents(),
   findEventsByOrganization: (organizationId) => dataAccess.findEventsByOrganization(organizationId),
+  findEventsByUser: (userId) => dataAccess.findEventsByUser(userId),
   createEvent: (eventData) => dataAccess.createEvent(eventData),
   updateEvent: (eventId, updateData) => dataAccess.updateEvent(eventId, updateData),
   deleteEvent: (eventId) => dataAccess.deleteEvent(eventId),
   
   findEmailVerification: (email, code, type) => dataAccess.findEmailVerification(email, code, type),
+  findVerifiedEmailVerification: (email, code, type) => dataAccess.findVerifiedEmailVerification(email, code, type),
   createEmailVerification: (verificationData) => dataAccess.createEmailVerification(verificationData),
   updateEmailVerification: (email, updateData) => dataAccess.updateEmailVerification(email, updateData),
+  deleteEmailVerification: (email) => dataAccess.deleteEmailVerification(email),
   
   findEventParticipantsByEvent: (eventId) => dataAccess.findEventParticipantsByEvent(eventId),
   findEventParticipantsByUser: (userId) => dataAccess.findEventParticipantsByUser(userId),
   createEventParticipant: (participantData) => dataAccess.createEventParticipant(participantData),
-  removeEventParticipant: (eventId, userId) => dataAccess.removeEventParticipant(eventId, userId)
+  removeEventParticipant: (eventId, userId) => dataAccess.removeEventParticipant(eventId, userId),
+  updateEventParticipant: (eventId, userId, updateData) => dataAccess.updateEventParticipant(eventId, userId, updateData)
 };

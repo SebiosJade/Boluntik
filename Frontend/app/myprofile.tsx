@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { API } from '../constants/Api';
+import { getInterestTitle } from '../constants/Interests';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfileEdit } from '../hooks/useProfileEdit';
 import { deleteAvatar, uploadAvatar } from '../services/avatarService';
@@ -30,7 +31,8 @@ const INTEREST_DISPLAY_MAP: { [key: string]: string } = {
 // Helper functions
 
 const getInterestDisplayName = (interestId: string) => {
-  return INTEREST_DISPLAY_MAP[interestId] || interestId;
+  // Use shared interests configuration
+  return getInterestTitle(interestId);
 };
 
 const getRoleDisplayName = (role: string) => {
@@ -44,6 +46,39 @@ const getRoleDisplayName = (role: string) => {
     default:
       return role;
   }
+};
+
+// Helper functions for badge styling
+const getBadgeColor = (badgeType: string) => {
+  const colors: { [key: string]: string } = {
+    'participation': '#3B82F6',
+    'excellence': '#F59E0B',
+    'leadership': '#8B5CF6',
+    'dedication': '#10B981',
+    'special': '#EF4444',
+    'teamwork': '#06B6D4',
+    'innovation': '#F97316',
+    'commitment': '#84CC16',
+    'impact': '#EC4899',
+    'mentor': '#6366F1'
+  };
+  return colors[badgeType] || '#6B7280';
+};
+
+const getBadgeIcon = (badgeType: string) => {
+  const icons: { [key: string]: any } = {
+    'participation': 'people',
+    'excellence': 'star',
+    'leadership': 'trophy',
+    'dedication': 'heart',
+    'special': 'sparkles',
+    'teamwork': 'handshake',
+    'innovation': 'bulb',
+    'commitment': 'time',
+    'impact': 'flash',
+    'mentor': 'school'
+  };
+  return icons[badgeType] || 'trophy';
 };
 
 export default function MyProfileScreen() {
@@ -71,6 +106,13 @@ export default function MyProfileScreen() {
   const [userInterests, setUserInterests] = useState<string[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // Achievements state
+  const [achievements, setAchievements] = useState<any>(null);
+  const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
+
+  // Achievement filter state
+  const [achievementFilter, setAchievementFilter] = useState<'badges' | 'feedback' | 'progress'>('badges');
 
   // Display state for expandable sections
   const [showAllInterests, setShowAllInterests] = useState(false);
@@ -104,7 +146,16 @@ export default function MyProfileScreen() {
   useEffect(() => {
     fetchUserProfile();
     loadCompletedEvents();
+    loadAchievements();
   }, []);
+
+  // Refresh profile when user returns from interest screen
+  useFocusEffect(
+    useCallback(() => {
+      // Refresh profile data when screen comes into focus
+      fetchUserProfile();
+    }, [])
+  );
 
   // Load completed events based on user role
   const loadCompletedEvents = async () => {
@@ -113,25 +164,17 @@ export default function MyProfileScreen() {
       return;
     }
     
-    console.log('=== LOADING USER EVENTS DEBUG ===');
-    console.log('User ID:', user.id);
-    console.log('User role:', user.role);
-    
     setIsLoadingEvents(true);
     try {
       let events: Event[] = [];
       
       if (user.role === 'organization') {
         // For organizers: get ALL events they created (both completed and upcoming)
-        console.log('Loading events for organization:', user.id);
         events = await eventService.getEventsByOrganization(user.id);
         setTotalEvents(events); // Store all events for metrics
-        console.log('Organization events loaded:', events.length);
       } else {
         // For volunteers: get events they actually joined
-        console.log('Loading joined events for volunteer:', user.id);
         events = await eventService.getUserJoinedEvents(user.id);
-        console.log('Volunteer joined events loaded:', events.length);
       }
       
       // Filter for completed events (status === 'Completed' or date is in the past)
@@ -473,6 +516,7 @@ export default function MyProfileScreen() {
         if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json();
           setUserProfile(fallbackData.user);
+          setUserInterests(fallbackData.user.interests || []);
         }
       }
     } catch (error) {
@@ -485,12 +529,29 @@ export default function MyProfileScreen() {
         if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json();
           setUserProfile(fallbackData.user);
+          setUserInterests(fallbackData.user.interests || []);
         }
       } catch (fallbackError) {
         console.error('Fallback also failed:', fallbackError);
       }
     } finally {
       setIsLoadingProfile(false);
+    }
+  };
+
+  // Load user achievements
+  const loadAchievements = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoadingAchievements(true);
+      const achievementsData = await eventService.getUserAchievements(user.id);
+      setAchievements(achievementsData.achievements);
+      console.log('Loaded achievements:', achievementsData.achievements);
+    } catch (error) {
+      console.error('Error loading achievements:', error);
+    } finally {
+      setIsLoadingAchievements(false);
     }
   };
 
@@ -792,12 +853,6 @@ export default function MyProfileScreen() {
         newPassword,
       };
       
-      console.log('=== FRONTEND CHANGE PASSWORD DEBUG ===');
-      console.log('Sending password change data:', {
-        currentPasswordLength: currentPassword.length,
-        newPasswordLength: newPassword.length,
-        hasToken: !!token
-      });
       
       const response = await fetch(API.changePassword, {
         method: 'PATCH',
@@ -826,7 +881,6 @@ export default function MyProfileScreen() {
           ]
         );
       } else {
-        console.log('Password change failed:', data);
         Alert.alert('Error', data.message || 'Failed to change password');
       }
     } catch (error) {
@@ -1053,9 +1107,141 @@ export default function MyProfileScreen() {
         </View>
 
 
-        {/* Badges */}
+        {/* Achievements Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Badges Earned</Text>
+          <Text style={styles.sectionTitle}>Achievements</Text>
+          
+          {/* Achievement Filter Buttons */}
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={[styles.filterButton, achievementFilter === 'badges' && styles.filterButtonActive]}
+              onPress={() => setAchievementFilter('badges')}
+            >
+              <Text style={[styles.filterButtonText, achievementFilter === 'badges' && styles.filterButtonTextActive]}>
+                Badges
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, achievementFilter === 'feedback' && styles.filterButtonActive]}
+              onPress={() => setAchievementFilter('feedback')}
+            >
+              <Text style={[styles.filterButtonText, achievementFilter === 'feedback' && styles.filterButtonTextActive]}>
+                Feedback
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, achievementFilter === 'progress' && styles.filterButtonActive]}
+              onPress={() => setAchievementFilter('progress')}
+            >
+              <Text style={[styles.filterButtonText, achievementFilter === 'progress' && styles.filterButtonTextActive]}>
+                Progress
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Database Badges */}
+          {achievementFilter === 'badges' && (
+            achievements?.badges && achievements.badges.length > 0 ? (
+              <View style={styles.achievementSection}>
+                <Text style={styles.achievementSubtitle}>Badges from Organizations</Text>
+                <View style={styles.badgesGrid}>
+                  {achievements.badges.map((badge: any, index: number) => (
+                    <View key={index} style={styles.organizationBadgeCard}>
+                      <View style={styles.organizationBadgeHeader}>
+                        <View style={[styles.organizationBadgeIcon, { backgroundColor: getBadgeColor(badge.badgeType) + '20' }]}>
+                          <Ionicons name={getBadgeIcon(badge.badgeType)} size={28} color={getBadgeColor(badge.badgeType)} />
+                        </View>
+                        <View style={styles.organizationBadgeStatus}>
+                          <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                        </View>
+                      </View>
+                      <View style={styles.organizationBadgeContent}>
+                        <Text style={styles.organizationBadgeName}>{badge.badgeName}</Text>
+                        <Text style={styles.organizationBadgeType}>{badge.badgeType.charAt(0).toUpperCase() + badge.badgeType.slice(1)} Badge</Text>
+                        {badge.description && (
+                          <Text style={styles.organizationBadgeDescription}>{badge.description}</Text>
+                        )}
+                      </View>
+                      <View style={styles.organizationBadgeFooter}>
+                        <View style={styles.organizationBadgeDateContainer}>
+                          <Ionicons name="calendar" size={14} color="#6B7280" />
+                          <Text style={styles.organizationBadgeDate}>
+                            Awarded {new Date(badge.awardedAt).toLocaleDateString()}
+                          </Text>
+                        </View>
+                        {badge.awardedBy && (
+                          <View style={styles.organizationBadgeAwarderContainer}>
+                            <Ionicons name="person" size={14} color="#6B7280" />
+                            <Text style={styles.organizationBadgeAwarder}>
+                              by {badge.awardedBy}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              achievementFilter === 'badges' && (
+                <Text style={styles.emptyStateText}>No badges from organizations yet</Text>
+              )
+            )
+          )}
+
+          {/* Database Feedback */}
+          {achievementFilter === 'feedback' && (
+            achievements?.feedback && achievements.feedback.length > 0 ? (
+              <View style={styles.achievementSection}>
+                <Text style={styles.achievementSubtitle}>Feedback Received</Text>
+                <View style={styles.feedbackList}>
+                  {achievements.feedback.map((feedback: any, index: number) => (
+                    <View key={index} style={styles.feedbackCard}>
+                      <View style={styles.feedbackHeader}>
+                        <View style={styles.ratingContainer}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Ionicons
+                              key={star}
+                              name={star <= feedback.rating ? 'star' : 'star-outline'}
+                              size={16}
+                              color="#F59E0B"
+                            />
+                          ))}
+                        </View>
+                        <Text style={styles.feedbackDate}>
+                          {new Date(feedback.givenAt).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      {feedback.feedback && (
+                        <Text style={styles.feedbackText}>{feedback.feedback}</Text>
+                      )}
+                      {feedback.skills && feedback.skills.length > 0 && (
+                        <View style={styles.skillsContainer}>
+                          <Text style={styles.skillsLabel}>Skills demonstrated:</Text>
+                          <View style={styles.skillsList}>
+                            {feedback.skills.map((skill: string, skillIndex: number) => (
+                              <View key={skillIndex} style={styles.skillTag}>
+                                <Text style={styles.skillText}>{skill}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              achievementFilter === 'feedback' && (
+                <Text style={styles.emptyStateText}>No feedback received yet</Text>
+              )
+            )
+          )}
+
+          {/* Hardcoded Progress Badges */}
+          {achievementFilter === 'progress' && (
+            <View style={styles.achievementSection}>
+              <Text style={styles.achievementSubtitle}>Progress Badges</Text>
           <View style={styles.badgesGrid}>
             {(() => {
               // Calculate badge achievements based on USER-SPECIFIC data
@@ -1069,21 +1255,6 @@ export default function MyProfileScreen() {
                 event.cause?.toLowerCase().includes('relief')
               );
               const hasTeamPlayer = completedEvents.length >= 5;
-
-              console.log('=== BADGE CALCULATION DEBUG ===');
-              console.log('User-specific data:', {
-                userId: user?.id,
-                userRole: user?.role,
-                completedEventsCount: completedEvents.length,
-                totalHours,
-                organizationsHelped,
-                hasFirstTimer,
-                hasHelpingHand,
-                hasCommunityHero,
-                hasLongTermVolunteer,
-                hasEmergencyReady,
-                hasTeamPlayer
-              });
 
               const dynamicBadges = [
                 {
@@ -1161,6 +1332,8 @@ export default function MyProfileScreen() {
               ));
             })()}
           </View>
+            </View>
+          )}
         </View>
 
         {/* Volunteer Impact Dashboard */}
@@ -1729,6 +1902,194 @@ const styles = StyleSheet.create({
   },
   badgeCardLocked: {
     opacity: 0.7,
+  },
+
+  // Achievement Section Styles
+  achievementSection: {
+    marginBottom: 24,
+  },
+  achievementSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+  },
+  badgeDate: {
+    fontSize: 10,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  feedbackList: {
+    gap: 12,
+  },
+  feedbackCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  feedbackHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  feedbackDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  feedbackText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  skillsContainer: {
+    marginTop: 8,
+  },
+  skillsLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  skillsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  skillTag: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  skillText: {
+    fontSize: 12,
+    color: '#374151',
+  },
+
+  // Filter Styles
+  filterContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  filterButtonActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Organization Badge Styles (Improved)
+  organizationBadgeCard: {
+    width: '48%',
+    alignItems: 'center',
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  organizationBadgeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 12,
+  },
+  organizationBadgeIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  organizationBadgeStatus: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  organizationBadgeContent: {
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  organizationBadgeName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  organizationBadgeType: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  organizationBadgeDescription: {
+    fontSize: 11,
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  organizationBadgeFooter: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  organizationBadgeDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  organizationBadgeDate: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  organizationBadgeAwarderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  organizationBadgeAwarder: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 
   // Volunteer Impact Dashboard Styles

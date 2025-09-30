@@ -3,6 +3,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const config = require('../config');
+const logger = require('../utils/logger');
 
 // Helmet security middleware
 const helmetMiddleware = helmet({

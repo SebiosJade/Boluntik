@@ -1,16 +1,72 @@
 const { body, param, query, validationResult } = require('express-validator');
 
+// Custom validation for specific input types
+const validateInputType = (field, value) => {
+  if (field === 'name') {
+    if (/^\d+$/.test(value)) {
+      return 'Name cannot be just numbers';
+    }
+    if (/^[0-9\s]+$/.test(value)) {
+      return 'Name cannot contain only numbers and spaces';
+    }
+    if (/^[^a-zA-Z\s\-'\.]+$/.test(value)) {
+      return 'Name must contain letters';
+    }
+  }
+  if (field === 'email') {
+    if (/^\d+$/.test(value)) {
+      return 'Email cannot be just numbers';
+    }
+    if (!value.includes('@')) {
+      return 'Email must contain @ symbol';
+    }
+  }
+  if (field === 'password' || field === 'newPassword') {
+    if (/^\d+$/.test(value)) {
+      return 'Password cannot be just numbers';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    if (!/[a-z]/.test(value)) {
+      return 'Password must contain lowercase letters';
+    }
+    if (!/[A-Z]/.test(value)) {
+      return 'Password must contain uppercase letters';
+    }
+    if (!/\d/.test(value)) {
+      return 'Password must contain numbers';
+    }
+  }
+  return null;
+};
+
 // Validation result handler
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    // Check for specific input type errors first
+    const customErrors = [];
+    for (const error of errors.array()) {
+      const customError = validateInputType(error.path, error.value);
+      if (customError) {
+        customErrors.push({
+          field: error.path,
+          message: customError,
+          value: error.value
+        });
+      } else {
+        customErrors.push({
+          field: error.path,
+          message: error.msg,
+          value: error.value
+        });
+      }
+    }
+    
     return res.status(400).json({
       error: 'Validation failed',
-      details: errors.array().map(err => ({
-        field: err.path,
-        message: err.msg,
-        value: err.value
-      }))
+      details: customErrors
     });
   }
   next();
@@ -23,7 +79,7 @@ const signupValidation = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Name must be between 2 and 50 characters')
     .matches(/^[a-zA-Z\s\-'\.]+$/)
-    .withMessage('Name can contain letters, spaces, hyphens, apostrophes, and periods'),
+    .withMessage('Name must contain only letters, spaces, hyphens, apostrophes, and periods'),
   
   body('email')
     .isEmail()
@@ -35,7 +91,7 @@ const signupValidation = [
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+    .withMessage('Password doesn\'t match requirements'),
   
   body('role')
     .optional()
@@ -95,7 +151,7 @@ const passwordResetValidation = [
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+    .withMessage('Password doesn\'t match requirements'),
   
   handleValidationErrors
 ];
@@ -288,8 +344,14 @@ const eventValidation = [
   
   body('maxParticipants')
     .optional()
-    .isInt({ min: 1, max: 1000 })
-    .withMessage('Max participants must be between 1 and 1000'),
+    .custom((value) => {
+      if (!value) return true; // Allow empty values since it's optional
+      const num = parseInt(value);
+      if (isNaN(num) || num < 1 || num > 1000) {
+        throw new Error('Max participants must be between 1 and 1000');
+      }
+      return true;
+    }),
   
   body('eventType')
     .optional()

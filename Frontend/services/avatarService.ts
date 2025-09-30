@@ -13,10 +13,6 @@ export interface AvatarUploadResponse {
 }
 
 export const uploadAvatar = async (imageUri: string, token: string): Promise<AvatarUploadResponse> => {
-  console.log('=== FRONTEND AVATAR UPLOAD DEBUG ===');
-  console.log('Image URI:', imageUri);
-  console.log('Has token:', !!token);
-  console.log('API URL:', `${API.BASE_URL}/api/auth/profile/avatar`);
   
   const formData = new FormData();
   

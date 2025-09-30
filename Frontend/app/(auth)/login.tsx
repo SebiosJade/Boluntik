@@ -34,15 +34,10 @@ export default function LoginScreen() {
       return;
     }
     
-    console.log('=== FRONTEND LOGIN DEBUG ===');
-    console.log('Login attempt:', { email, passwordLength: password.length, rememberMe });
-    console.log('API endpoint:', API.login);
-    
     try {
       setSubmitting(true);
       
       const loginData = { email, password };
-      console.log('Sending login request with data:', loginData);
       
       const res = await fetch(API.login, {
         method: 'POST',
@@ -50,19 +45,13 @@ export default function LoginScreen() {
         body: JSON.stringify(loginData),
       });
       
-      console.log('Login response status:', res.status);
-      console.log('Login response headers:', res.headers);
-      
       const data = await res.json();
-      console.log('Login response data:', data);
       
       if (!res.ok) {
-        console.log('Login failed with status:', res.status);
         throw new Error(data?.message || 'Login failed');
       }
       
       // Use the auth context to login with remember me
-      console.log('Login successful, calling auth context login...');
       await login(data, rememberMe);
       
       // Show success alert
@@ -107,9 +96,6 @@ export default function LoginScreen() {
       return;
     }
 
-    console.log('=== FRONTEND SEND RESET CODE DEBUG ===');
-    console.log('Sending reset code for email:', forgotEmail);
-    console.log('API endpoint:', API.forgotPassword);
 
     try {
       setSendingCode(true);
@@ -168,13 +154,23 @@ export default function LoginScreen() {
       const data = await res.json();
       
       if (!res.ok) {
+        console.log('Reset code verification failed with status:', res.status);
+        console.log('Error details:', data);
+        
+        // Handle validation errors with specific messages
+        if (data?.details && Array.isArray(data.details)) {
+          const errorMessages = data.details.map((error: any) => error.message).join('\n');
+          throw new Error(errorMessages);
+        }
+        
         throw new Error(data?.message || 'Invalid reset code');
       }
 
       setCodeVerified(true);
       Alert.alert('Success', 'Code verified! Please enter your new password');
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Invalid reset code');
+      console.log('Reset code verification error:', e?.message);
+      Alert.alert('Verification Failed', e?.message || 'Invalid reset code');
     } finally {
       setVerifyingCode(false);
     }
@@ -210,6 +206,15 @@ export default function LoginScreen() {
       const data = await res.json();
       
       if (!res.ok) {
+        console.log('Password reset failed with status:', res.status);
+        console.log('Error details:', data);
+        
+        // Handle validation errors with specific messages
+        if (data?.details && Array.isArray(data.details)) {
+          const errorMessages = data.details.map((error: any) => error.message).join('\n');
+          throw new Error(errorMessages);
+        }
+        
         throw new Error(data?.message || 'Failed to reset password');
       }
 
@@ -226,7 +231,8 @@ export default function LoginScreen() {
         ]
       );
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to reset password');
+      console.log('Password reset error:', e?.message);
+      Alert.alert('Password Reset Failed', e?.message || 'Failed to reset password');
     } finally {
       setResettingPassword(false);
     }

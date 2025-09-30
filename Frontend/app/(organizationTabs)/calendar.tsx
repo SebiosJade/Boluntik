@@ -75,15 +75,10 @@ export default function CalendarScreen() {
   }, []);
 
   const loadEvents = async () => {
-    console.log('organization calendar - loadEvents - user object:', user);
-    console.log('organization calendar - loadEvents - user.id:', user?.id);
-    
+    console.log('Loading events for user ID:', user?.id);
     if (!user?.id || user.id.trim() === '') {
-      console.log('organization calendar - No valid user ID found');
       return;
     }
-    
-    console.log('Loading events for user:', user.id);
     setIsLoadingEvents(true);
     try {
       const events = await eventService.getEventsByUser(user.id);
@@ -133,12 +128,12 @@ export default function CalendarScreen() {
 
   // Event type and difficulty options
   const eventTypeOptions = [
-    'Volunteer', 'Workshop', 'Training', 'Conference', 'Fundraiser', 
-    'Community Service', 'Educational', 'Recreational', 'Professional Development', 'Other'
+    'volunteer', 'workshop', 'training', 'conference', 'fundraiser', 
+    'community service', 'educational', 'recreational', 'professional development', 'other'
   ];
 
   const difficultyOptions = [
-    'Beginner', 'Intermediate', 'Advanced', 'Expert', 'All Levels'
+    'beginner', 'intermediate', 'advanced', 'expert', 'all levels'
   ];
 
   // Handle date selection from calendar
@@ -263,13 +258,11 @@ export default function CalendarScreen() {
 
   // Event action handlers
   const handleEventDetails = (event: Event) => {
-    console.log('Opening event details for:', event.title);
     setSelectedEvent(event);
     setShowEventDetails(true);
   };
 
   const handleEventEdit = (event: Event) => {
-    console.log('Opening event edit for:', event.title);
     setSelectedEvent(event);
     // Populate edit form with event data
     setEditForm({
@@ -292,24 +285,20 @@ export default function CalendarScreen() {
   };
 
   const handleViewAllEvents = () => {
-    console.log('Opening view all events modal');
     setShowAllEvents(true);
   };
 
   const closeEventDetails = () => {
-    console.log('Closing event details modal');
     setShowEventDetails(false);
     setSelectedEvent(null);
   };
 
   const closeEventEdit = () => {
-    console.log('Closing event edit modal');
     setShowEventEdit(false);
     setSelectedEvent(null);
   };
 
   const closeAllEvents = () => {
-    console.log('Closing view all events modal');
     setShowAllEvents(false);
   };
 
@@ -367,9 +356,13 @@ export default function CalendarScreen() {
 
     if (!editForm.location.trim()) {
       errors.location = 'Event location is required';
+    } else if (editForm.location.trim().length < 3) {
+      errors.location = 'Location must be at least 3 characters';
+    } else if (editForm.location.trim().length > 200) {
+      errors.location = 'Location must be less than 200 characters';
     }
 
-    if (!editForm.maxParticipants.trim()) {
+    if (!editForm.maxParticipants || !String(editForm.maxParticipants).trim()) {
       errors.maxParticipants = 'Max volunteers is required';
     } else if (isNaN(Number(editForm.maxParticipants)) || Number(editForm.maxParticipants) <= 0) {
       errors.maxParticipants = 'Please enter a valid number';
@@ -424,8 +417,12 @@ export default function CalendarScreen() {
         )
       );
 
-      Alert.alert('Success', 'Event updated successfully!');
-      closeEventEdit();
+      Alert.alert('Success', 'Event updated successfully!', [
+        { text: 'OK', onPress: () => {
+          closeEventEdit();
+          loadEvents(); // Refresh events after update
+        }}
+      ]);
     } catch (error) {
       console.error('Failed to update event:', error);
       Alert.alert('Error', 'Failed to update event. Please try again.');
@@ -554,6 +551,7 @@ export default function CalendarScreen() {
 
   // Get events with filters (upcoming by default, past events when date filter is applied)
   const getUpcomingEvents = () => {
+    
     const now = new Date();
     now.setHours(0, 0, 0, 0); // Set to start of day for comparison
     
@@ -867,6 +865,10 @@ export default function CalendarScreen() {
     
     if (!eventForm.location.trim()) {
       errors.location = 'Event location is required';
+    } else if (eventForm.location.trim().length < 3) {
+      errors.location = 'Location must be at least 3 characters';
+    } else if (eventForm.location.trim().length > 200) {
+      errors.location = 'Location must be less than 200 characters';
     }
     
     if (eventForm.cause.length === 0) {
@@ -906,7 +908,6 @@ export default function CalendarScreen() {
 
   const convertTo24Hour = (time12: string) => {
     if (!time12 || typeof time12 !== 'string') {
-      console.log('convertTo24Hour: Invalid input:', time12);
       return 0;
     }
     
@@ -924,19 +925,16 @@ export default function CalendarScreen() {
         period = amPmMatch[0];
         time = timeStr.slice(0, -2);
       } else {
-        console.log('convertTo24Hour: No AM/PM found:', time12);
         return 0;
       }
     }
     
     if (!time || !period) {
-      console.log('convertTo24Hour: Invalid time format:', time12);
       return 0;
     }
     
     const [hours, minutes] = time.split(':');
     if (!hours || !minutes) {
-      console.log('convertTo24Hour: Invalid time parts:', time, hours, minutes);
       return 0;
     }
     
@@ -950,16 +948,6 @@ export default function CalendarScreen() {
     }
     
     const result = hour24 * 60 + parseInt(minutes);
-    console.log('convertTo24Hour:', {
-      input: time12,
-      time,
-      period,
-      hours,
-      minutes,
-      hour24,
-      periodUpper,
-      result
-    });
     
     return result; // Return minutes since midnight for easy comparison
   };
@@ -1076,8 +1064,6 @@ export default function CalendarScreen() {
       return;
     }
 
-    console.log('Creating event with user:', user);
-    console.log('Event form data:', eventForm);
 
     setIsSubmitting(true);
 
@@ -1105,15 +1091,17 @@ export default function CalendarScreen() {
         createdByRole: user?.role || 'organization'
       };
 
-      console.log('Sending event data to API:', eventData);
       const newEvent = await eventService.createEvent(eventData);
-      console.log('Event created successfully:', newEvent);
       
       // Add the new event to the local state
       setCreatedEvents(prev => [newEvent, ...prev]);
 
       Alert.alert('Success', 'Event created successfully!', [
-        { text: 'OK', onPress: closeEventModal }
+        { text: 'OK', onPress: () => {
+          closeEventModal();
+          // Reload events to ensure the new event appears
+          loadEvents();
+        }}
       ]);
     } catch (error) {
       console.error('Failed to create event:', error);
@@ -1156,7 +1144,6 @@ export default function CalendarScreen() {
                 item.id === 'calendar' && styles.activeMenuItem,
               ]}
               onPress={() => {
-                console.log(`Navigating to ${item.title}`);
                 closeMenu();
                 
                 if (item.id === 'dashboard') {
@@ -1485,25 +1472,42 @@ export default function CalendarScreen() {
           )}
         </TouchableOpacity>
 
-        {getUpcomingEvents().map((event) => {
-          // Check if this is a past event
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-          const [month, day, year] = event.date.split('/').map(Number);
-          const eventDate = new Date(year, month - 1, day);
-          eventDate.setHours(0, 0, 0, 0);
-          const isPastEvent = eventDate < now;
-          
-              return (
-                <EventCard 
-                  key={event.id} 
-                  event={event} 
-                  isPastEvent={isPastEvent}
-                  onDetails={handleEventDetails}
-                  onEdit={handleEventEdit}
-                />
-              );
-        })}
+        {getUpcomingEvents().length > 0 ? (
+          getUpcomingEvents().map((event) => {
+            // Check if this is a past event
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const [month, day, year] = event.date.split('/').map(Number);
+            const eventDate = new Date(year, month - 1, day);
+            eventDate.setHours(0, 0, 0, 0);
+            const isPastEvent = eventDate < now;
+            
+                return (
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    isPastEvent={isPastEvent}
+                    onDetails={handleEventDetails}
+                    onEdit={handleEventEdit}
+                  />
+                );
+          })
+        ) : (
+          <View style={styles.noEventsContainer}>
+            <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+            <Text style={styles.noEventsTitle}>No Events Found</Text>
+            <Text style={styles.noEventsSubtitle}>
+              {isLoadingEvents ? 'Loading events...' : 'Create your first event to get started!'}
+            </Text>
+            <TouchableOpacity 
+              style={styles.refreshButton}
+              onPress={loadEvents}
+            >
+              <Ionicons name="refresh" size={16} color="#3B82F6" />
+              <Text style={styles.refreshButtonText}>Refresh Events</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.statsSection}>
           <View style={styles.statCard}>
@@ -3063,6 +3067,48 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
+  noEventsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  noEventsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noEventsSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  debugInfo: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBF4FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  refreshButtonText: {
+    color: '#3B82F6',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
   eventCardHeader: { marginBottom: 12 },
   eventTitleRow: {
     flexDirection: 'row',
@@ -3790,10 +3836,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-  noEventsContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
   },
   noEventsText: {
     fontSize: 18,

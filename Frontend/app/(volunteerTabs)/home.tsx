@@ -36,8 +36,7 @@ const entranceAnimation = () => {
       easing: Easing.out(Easing.back(1.2)),
       useNativeDriver: true,
     }),
-  ]).start(); 
-  console.log('entranceAnimation');
+  ]).start();
 };
 
 // Continuous pulse animation for metrics
@@ -58,7 +57,6 @@ const pulseAnimation = () => {
       }),
     ])
   ).start();
-  console.log('pulseAnimation');
 };
 
 export default function HomeDashboardScreen() {
@@ -83,13 +81,7 @@ export default function HomeDashboardScreen() {
 
   // Load user's joined events and calculate badge metrics
   const loadJoinedEvents = async () => {
-    console.log('loadJoinedEvents - user object:', user);
-    console.log('loadJoinedEvents - user.id:', user?.id);
-    console.log('loadJoinedEvents - user.id type:', typeof user?.id);
-    
     if (!user?.id || user.id.trim() === '') {
-      console.log('loadJoinedEvents - No user ID found or empty user ID, returning early');
-      console.log('loadJoinedEvents - user object:', user);
       return;
     }
     
@@ -383,7 +375,7 @@ export default function HomeDashboardScreen() {
             }
           ]}
         >
-          <MetricCard label="Hours This Month" value={hoursThisMonth.toString()} />
+          <MetricCard label="Hours Volunteered This Month" value={hoursThisMonth.toString()} />
           <MetricCard label="Events Attended" value={eventsThisMonth.toString()} />
         </Animated.View>
 

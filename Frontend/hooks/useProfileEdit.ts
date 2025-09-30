@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { API } from '../constants/Api';
+import { PROFILE_INTERESTS } from '../constants/Interests';
 
 export const useProfileEdit = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -41,18 +42,8 @@ export const useProfileEdit = () => {
     'Holidays', 'Emergency Response', 'Flexible Schedule', 'Remote Work', 'In-Person Only'
   ];
 
-  const availableInterests = [
-    { id: 'community', name: 'Community Service' },
-    { id: 'health', name: 'Health & Wellness' },
-    { id: 'tech', name: 'Technology' },
-    { id: 'environment', name: 'Environment' },
-    { id: 'education', name: 'Education' },
-    { id: 'animals', name: 'Animal Welfare' },
-    { id: 'seniors', name: 'Senior Care' },
-    { id: 'children', name: 'Children & Youth' },
-    { id: 'disaster', name: 'Disaster Relief' },
-    { id: 'arts', name: 'Arts & Culture' }
-  ];
+  // Use shared interests configuration
+  const availableInterests = PROFILE_INTERESTS;
 
   // Initialize form with current profile data
   const initializeForm = (profileData: any) => {
@@ -137,11 +128,15 @@ export const useProfileEdit = () => {
         availability: formData.availability
       };
       
-      console.log('=== FRONTEND PROFILE UPDATE DEBUG ===');
-      console.log('Sending profile data:', JSON.stringify(profileData, null, 2));
-      console.log('Skills type:', typeof profileData.skills, 'Length:', profileData.skills?.length);
-      console.log('Availability type:', typeof profileData.availability, 'Length:', profileData.availability?.length);
-      console.log('Location value:', `"${profileData.location}"`, 'Length:', profileData.location.length);
+      console.log('Sending profile update request to:', API.updateProfile);
+      console.log('Request data:', {
+        name: profileData.name,
+        bio: profileData.bio,
+        phone: profileData.phone,
+        location: profileData.location,
+        skills: profileData.skills,
+        availability: profileData.availability
+      });
       
       // Update profile information
       const profileResponse = await fetch(API.updateProfile, {
@@ -154,6 +149,8 @@ export const useProfileEdit = () => {
       });
 
       // Update interests separately
+      console.log('Sending interests update request to:', API.updateInterests);
+      console.log('Interests data:', formData.interests);
       const interestsResponse = await fetch(API.updateInterests, {
         method: 'PATCH',
         headers: {
@@ -180,18 +177,10 @@ export const useProfileEdit = () => {
           ]
         );
       } else {
-        console.log('=== PROFILE UPDATE ERROR ===');
-        console.log('Profile response status:', profileResponse.status);
-        console.log('Interests response status:', interestsResponse.status);
-        
         const profileError = await profileResponse.json();
         const interestsError = await interestsResponse.json();
         
-        console.log('Profile error:', profileError);
-        console.log('Interests error:', interestsError);
-        
         const errorMessage = profileError.message || interestsError.message || 'Failed to update profile';
-        console.log('Final error message:', errorMessage);
         
         Alert.alert('Error', errorMessage);
       }

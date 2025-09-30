@@ -1,6 +1,8 @@
+import ProfileIcon from '@/components/ProfileIcon';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useRef, useState } from 'react';
 import {
     Alert,
     Animated,
@@ -15,18 +17,29 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import ProfileIcon from '@/components/ProfileIcon';
 
 const { width } = Dimensions.get('window');
 const sidebarWidth = width * 0.8;
+
+interface Campaign {
+  id: string;
+  title: string;
+  organization: string;
+  description: string;
+  goal: number;
+  raised: number;
+  category: string;
+  image: string;
+  deadline: string;
+  donors: number;
+}
 
 export default function CrowdfundingScreen() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [donationModalVisible, setDonationModalVisible] = useState(false);
   const [donationAmount, setDonationAmount] = useState('');
   const [activeTab, setActiveTab] = useState('discover');

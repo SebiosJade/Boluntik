@@ -24,7 +24,7 @@ function resolveDevHost(): string | null {
 }
 
 const ANDROID_EMULATOR_HOST = 'http://10.0.2.2:4000';
-const LOCALHOST = 'http://localhost:4000';
+const LOCALHOST = 'http://192.168.68.126:4000';
 
 export const API_BASE_URL =
   ENV_URL ||
@@ -65,5 +65,10 @@ export const API = {
     unjoin: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/unjoin`,
     getUserJoined: (userId: string) => `${API_BASE_URL}/api/events/user/${userId}/joined`,
     checkParticipation: (eventId: string, userId: string) => `${API_BASE_URL}/api/events/${eventId}/participation/${userId}`,
+    getAchievements: (userId: string) => `${API_BASE_URL}/api/events/achievements/${userId}`,
+    // Attendance tracking
+    getAttendance: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/attendance`,
+    markAttendance: (eventId: string, userId: string) => `${API_BASE_URL}/api/events/${eventId}/attendance/${userId}`,
+    bulkMarkAttendance: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/attendance/bulk`,
   },
 };

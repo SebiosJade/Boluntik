@@ -4,7 +4,8 @@ const emailVerificationSchema = new mongoose.Schema({
   id: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    default: () => require('crypto').randomUUID()
   },
   email: {
     type: String,

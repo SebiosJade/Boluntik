@@ -2,9 +2,10 @@ import ProfileDropdown from '@/components/ProfileDropdown';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
+import { attendanceService } from '../../services/attendanceService';
 import { Event, eventService } from '../../services/eventService';
 
 const { width } = Dimensions.get('window');
@@ -26,6 +27,19 @@ export default function VolunteersScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  
+  // Volunteer Management State
+  const [showVolunteerManagement, setShowVolunteerManagement] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [eventVolunteers, setEventVolunteers] = useState<any[]>([]);
+  const [isLoadingVolunteers, setIsLoadingVolunteers] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
+  
+  // Attendance State
+  const [attendanceData, setAttendanceData] = useState<any>(null);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
 
   const toggleMenu = () => {
     if (isMenuOpen) {
@@ -176,27 +190,206 @@ export default function VolunteersScreen() {
   }, [user?.id]);
 
   const handleInviteVolunteers = () => {
-    console.log('Invite Volunteers pressed');
     // Navigate to invite volunteers screen
   };
 
   const handleFilter = () => {
-    console.log('Filter pressed');
     // Open filter modal
   };
 
   const handleMessageSelected = () => {
-    console.log('Message Selected pressed');
     // Open message modal
   };
 
-  const handleManageVolunteers = (eventId: string) => {
-    console.log(`Manage volunteers for event ${eventId}`);
-    // Navigate to manage volunteers screen
+  const handleManageVolunteers = async (eventId: string) => {
+    setSelectedEventId(eventId);
+    setShowVolunteerManagement(true);
+    await fetchEventVolunteers(eventId);
+  };
+
+  const fetchEventVolunteers = async (eventId: string) => {
+    setIsLoadingVolunteers(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.68.126:4000';
+      const fullUrl = `${apiUrl}/api/events/${eventId}/volunteers`;
+      
+      const response = await fetch(fullUrl);
+      const data = await response.json();
+      
+      if (data.success) {
+        setEventVolunteers(data.volunteers);
+      } else {
+        Alert.alert('Error', 'Failed to fetch volunteers');
+      }
+    } catch (error) {
+      console.error('Error fetching volunteers:', error);
+      Alert.alert('Error', 'Failed to fetch volunteers');
+    } finally {
+      setIsLoadingVolunteers(false);
+    }
+  };
+
+  const handleUpdateVolunteerStatus = async (volunteerId: string, status: string, action?: string) => {
+    if (!selectedEventId) {
+      Alert.alert('Error', 'No event selected');
+      return;
+    }
+    try {
+      const response = await fetch(`http://192.168.68.126:4000/api/events/${selectedEventId}/volunteers/${volunteerId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status, action }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        Alert.alert('Success', data.message);
+        await fetchEventVolunteers(selectedEventId!);
+      } else {
+        if (data.alreadyCheckedIn || data.alreadyCheckedOut) {
+          Alert.alert('Already Done', data.message);
+        } else {
+          Alert.alert('Error', data.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating volunteer status:', error);
+      Alert.alert('Error', 'Failed to update volunteer status');
+    }
+  };
+
+  const handleGiveFeedback = (volunteer: any) => {
+    setSelectedVolunteer(volunteer);
+    setShowFeedbackModal(true);
+  };
+
+  const handleAwardBadge = (volunteer: any) => {
+    setSelectedVolunteer(volunteer);
+    setShowBadgeModal(true);
+  };
+
+  const submitFeedback = async (rating: number, feedback: string, skills: string[]) => {
+    if (!selectedEventId || !selectedVolunteer) {
+      Alert.alert('Error', 'No event or volunteer selected');
+      return;
+    }
+    try {
+      const response = await fetch(`http://192.168.68.126:4000/api/events/${selectedEventId}/volunteers/${selectedVolunteer.userId}/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rating, feedback, skills }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        Alert.alert('Success', 'Feedback submitted successfully');
+        setShowFeedbackModal(false);
+        await fetchEventVolunteers(selectedEventId!);
+      } else {
+        if (data.alreadyGiven) {
+          Alert.alert('Already Given', 'Feedback has already been given for this volunteer');
+        } else {
+          Alert.alert('Error', data.message || 'Failed to submit feedback');
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      Alert.alert('Error', 'Failed to submit feedback');
+    }
+  };
+
+  const submitBadge = async (badgeType: string, badgeName: string, description: string) => {
+    if (!selectedEventId || !selectedVolunteer) {
+      Alert.alert('Error', 'No event or volunteer selected');
+      return;
+    }
+    try {
+      const response = await fetch(`http://192.168.68.126:4000/api/events/${selectedEventId}/volunteers/${selectedVolunteer.userId}/badge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ badgeType, badgeName, description }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        Alert.alert('Success', 'Badge awarded successfully');
+        setShowBadgeModal(false);
+        await fetchEventVolunteers(selectedEventId!);
+      } else {
+        if (data.alreadyGiven) {
+          Alert.alert('Already Given', `Badge of type '${badgeType}' has already been awarded to this volunteer`);
+        } else {
+          Alert.alert('Error', data.message || 'Failed to award badge');
+        }
+      }
+    } catch (error) {
+      console.error('Error awarding badge:', error);
+      Alert.alert('Error', 'Failed to award badge');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'registered': return '#3B82F6';
+      case 'confirmed': return '#10B981';
+      case 'attended': return '#059669';
+      case 'no_show': return '#EF4444';
+      case 'cancelled': return '#6B7280';
+      default: return '#6B7280';
+    }
+  };
+
+  // Attendance Functions
+  const fetchEventAttendance = async (eventId: string) => {
+    setIsLoadingAttendance(true);
+    try {
+      const data = await attendanceService.getEventAttendance(eventId);
+      setAttendanceData(data);
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      Alert.alert('Error', 'Failed to fetch attendance data');
+    } finally {
+      setIsLoadingAttendance(false);
+    }
+  };
+
+  const markVolunteerAttendance = async (userId: string, attendanceStatus: 'attended' | 'not_attended' | 'pending') => {
+    if (!selectedEventId) {
+      Alert.alert('Error', 'No event selected');
+      return;
+    }
+    try {
+      await attendanceService.markAttendance(selectedEventId, userId, attendanceStatus, user?.name || 'Organization');
+      Alert.alert('Success', `Attendance marked as ${attendanceStatus.replace('_', ' ')}`);
+      await fetchEventAttendance(selectedEventId);
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      Alert.alert('Error', 'Failed to mark attendance');
+    }
+  };
+
+  const getAttendanceColor = (attendanceStatus: string) => {
+    switch (attendanceStatus) {
+      case 'attended': return '#10B981';
+      case 'not_attended': return '#EF4444';
+      case 'pending': return '#6B7280';
+      default: return '#6B7280';
+    }
+  };
+
+  const getAttendanceIcon = (attendanceStatus: string) => {
+    switch (attendanceStatus) {
+      case 'attended': return 'checkmark-circle';
+      case 'not_attended': return 'close-circle';
+      case 'pending': return 'help-circle';
+      default: return 'help-circle';
+    }
   };
 
   const handleEmailEvent = (eventId: string) => {
-    console.log(`Email event ${eventId}`);
     // Open email modal
   };
 
@@ -249,7 +442,6 @@ export default function VolunteersScreen() {
                 item.id === 'volunteers' && styles.activeMenuItem,
               ]}
               onPress={() => {
-                console.log(`Navigating to ${item.title}`);
                 closeMenu();
                 
                 if (item.id === 'dashboard') {
@@ -515,9 +707,441 @@ export default function VolunteersScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Volunteer Management Modal */}
+      {showVolunteerManagement && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.volunteerManagementModal}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleContainer}>
+                <Ionicons name="people" size={24} color="#3B82F6" />
+                <View>
+                  <Text style={styles.modalTitle}>Manage Volunteers</Text>
+                  <Text style={styles.modalSubtitle}>
+                    {allEvents.find(e => e.id === selectedEventId)?.title || 'Event'}
+                  </Text>
+                  <Text style={styles.modalHint}>
+                    Close to manage other events
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowVolunteerManagement(false);
+                  setSelectedEventId(null);
+                  setEventVolunteers([]);
+                }}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {isLoadingVolunteers ? (
+              <View style={styles.volunteersLoadingContainer}>
+                <Text>Loading volunteers...</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.volunteersList}>
+                {eventVolunteers.length === 0 ? (
+                  <View style={styles.noVolunteersContainer}>
+                    <Text style={styles.noVolunteersText}>No volunteers found for this event</Text>
+                  </View>
+                ) : (
+                  eventVolunteers.map((volunteer, index) => {
+                    return (
+                  <View key={index} style={styles.volunteerCard}>
+                    <View style={styles.modalVolunteerInfo}>
+                      <View style={styles.volunteerAvatarContainer}>
+                        {volunteer.user?.avatar ? (
+                          <Image 
+                            source={{ uri: volunteer.user.avatar }} 
+                            style={styles.volunteerAvatarImage}
+                            defaultSource={require('../../assets/images/icon.png')}
+                          />
+                        ) : (
+                          <View style={styles.volunteerAvatar}>
+                            <Text style={styles.volunteerInitial}>
+                              {volunteer.user?.name?.charAt(0) || 'V'}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={[
+                          styles.statusIndicator,
+                          { backgroundColor: getStatusColor(volunteer.status) }
+                        ]} />
+                      </View>
+                      <View style={styles.volunteerDetails}>
+                        <Text style={styles.modalVolunteerName}>{volunteer.user?.name || 'Unknown'}</Text>
+                        <Text style={styles.volunteerEmail}>{volunteer.user?.email || ''}</Text>
+                        <Text style={styles.eventIndicator}>
+                          Event: {allEvents.find(e => e.id === selectedEventId)?.title || 'Current Event'}
+                        </Text>
+                         {volunteer.checkInTime && (
+                           <Text style={styles.timeStamp}>
+                             Check-in: {new Date(volunteer.checkInTime).toLocaleString()}
+                           </Text>
+                         )}
+                         {volunteer.checkOutTime && (
+                           <Text style={styles.timeStamp}>
+                             Check-out: {new Date(volunteer.checkOutTime).toLocaleString()}
+                           </Text>
+                         )}
+                        <View style={styles.volunteerMeta}>
+                          <View style={[
+                            styles.statusBadge,
+                            { backgroundColor: getStatusColor(volunteer.status) }
+                          ]}>
+                            <Text style={styles.statusText}>{volunteer.status}</Text>
+                          </View>
+                          
+                          {/* Attendance Status */}
+                          <View style={[
+                            styles.attendanceBadge,
+                            { backgroundColor: getAttendanceColor(volunteer.attendanceStatus || 'pending') }
+                          ]}>
+                            <Ionicons 
+                              name={getAttendanceIcon(volunteer.attendanceStatus || 'pending')} 
+                              size={12} 
+                              color="#FFFFFF" 
+                            />
+                            <Text style={styles.attendanceText}>
+                              {volunteer.attendanceStatus || 'pending'}
+                            </Text>
+                          </View>
+                          
+                          {volunteer.feedback && volunteer.feedback.rating && (
+                            <View style={styles.ratingContainer}>
+                              <Ionicons name="star" size={12} color="#F59E0B" />
+                              <Text style={styles.ratingText}>{volunteer.feedback.rating}/5</Text>
+                            </View>
+                          )}
+                          {volunteer.badges && volunteer.badges.length > 0 && (
+                            <View style={styles.badgesContainer}>
+                              <Ionicons name="medal" size={12} color="#F59E0B" />
+                              <Text style={styles.badgesText}>{volunteer.badges.length}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.volunteerActions}>
+                      <View style={styles.actionRow}>
+                        <TouchableOpacity 
+                          style={[
+                            styles.actionButton,
+                            volunteer.feedback && volunteer.feedback.rating && styles.disabledButton
+                          ]}
+                          onPress={() => handleGiveFeedback(volunteer)}
+                          disabled={!!(volunteer.feedback && volunteer.feedback.rating)}
+                        >
+                          <Ionicons 
+                            name={volunteer.feedback && volunteer.feedback.rating ? "star" : "star-outline"} 
+                            size={16} 
+                            color={volunteer.feedback && volunteer.feedback.rating ? "#10B981" : "#6B7280"} 
+                          />
+                          <Text style={[
+                            styles.actionButtonText,
+                            volunteer.feedback && volunteer.feedback.rating && styles.disabledButtonText
+                          ]}>
+                            {volunteer.feedback && volunteer.feedback.rating ? 'Reviewed' : 'Feedback'}
+                          </Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => handleAwardBadge(volunteer)}
+                        >
+                          <Ionicons name="medal-outline" size={16} color="#6B7280" />
+                          <Text style={styles.actionButtonText}>Badge</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                       <View style={styles.actionRow}>
+                         <TouchableOpacity 
+                           style={[
+                             styles.actionButton,
+                             volunteer.checkInTime && styles.undoButton
+                           ]}
+                           onPress={() => {
+                             if (volunteer.checkInTime) {
+                               handleUpdateVolunteerStatus(volunteer.userId, volunteer.status, 'undo_checkin');
+                             } else {
+                               handleUpdateVolunteerStatus(volunteer.userId, volunteer.status, 'checkin');
+                             }
+                           }}
+                         >
+                           <Ionicons 
+                             name={volunteer.checkInTime ? "arrow-undo-outline" : "log-in-outline"} 
+                             size={16} 
+                             color={volunteer.checkInTime ? "#EF4444" : "#6B7280"} 
+                           />
+                           <Text style={[
+                             styles.actionButtonText,
+                             volunteer.checkInTime && styles.undoButtonText
+                           ]}>
+                             {volunteer.checkInTime ? 'Undo Check-in' : 'Check-in'}
+                           </Text>
+                         </TouchableOpacity>
+
+                         <TouchableOpacity 
+                           style={[
+                             styles.actionButton,
+                             volunteer.checkOutTime && styles.undoButton
+                           ]}
+                           onPress={() => {
+                             if (volunteer.checkOutTime) {
+                               handleUpdateVolunteerStatus(volunteer.userId, volunteer.status, 'undo_checkout');
+                             } else {
+                               handleUpdateVolunteerStatus(volunteer.userId, volunteer.status, 'checkout');
+                             }
+                           }}
+                         >
+                           <Ionicons 
+                             name={volunteer.checkOutTime ? "arrow-undo-outline" : "log-out-outline"} 
+                             size={16} 
+                             color={volunteer.checkOutTime ? "#EF4444" : "#6B7280"} 
+                           />
+                           <Text style={[
+                             styles.actionButtonText,
+                             volunteer.checkOutTime && styles.undoButtonText
+                           ]}>
+                             {volunteer.checkOutTime ? 'Undo Check-out' : 'Check-out'}
+                           </Text>
+                         </TouchableOpacity>
+                       </View>
+
+                      {/* Attendance Actions */}
+                      <View style={styles.attendanceActions}>
+                        <Text style={styles.attendanceLabel}>Mark Attendance:</Text>
+                        <View style={styles.attendanceButtons}>
+                          <TouchableOpacity 
+                            style={[styles.attendanceButton, styles.attendedButton]}
+                            onPress={() => markVolunteerAttendance(volunteer.userId, 'attended')}
+                          >
+                            <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
+                            <Text style={styles.attendanceButtonText}>Attended</Text>
+                          </TouchableOpacity>
+                          
+                          <TouchableOpacity 
+                            style={[styles.attendanceButton, styles.notAttendedButton]}
+                            onPress={() => markVolunteerAttendance(volunteer.userId, 'not_attended')}
+                          >
+                            <Ionicons name="close-circle" size={14} color="#FFFFFF" />
+                            <Text style={styles.attendanceButtonText}>Not Attended</Text>
+                          </TouchableOpacity>
+                          
+                          <TouchableOpacity 
+                            style={[styles.attendanceButton, styles.defaultStatusButton]}
+                            onPress={() => markVolunteerAttendance(volunteer.userId, 'pending')}
+                          >
+                            <Ionicons name="help-circle" size={14} color="#FFFFFF" />
+                            <Text style={styles.attendanceButtonText}>Default Status</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                    );
+                  })
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <FeedbackModal
+          volunteer={selectedVolunteer}
+          onSubmit={submitFeedback}
+          onClose={() => setShowFeedbackModal(false)}
+        />
+      )}
+
+      {/* Badge Modal */}
+      {showBadgeModal && (
+        <BadgeModal
+          volunteer={selectedVolunteer}
+          onSubmit={submitBadge}
+          onClose={() => setShowBadgeModal(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
+
+// Feedback Modal Component
+const FeedbackModal = ({ volunteer, onSubmit, onClose }: any) => {
+  const [rating, setRating] = useState(5);
+  const [feedback, setFeedback] = useState('');
+
+  const handleSubmit = () => {
+    onSubmit(rating, feedback, []);
+  };
+
+  return (
+    <View style={styles.modalOverlay}>
+      <View style={styles.feedbackModal}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Give Feedback to {volunteer?.user?.name}</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.feedbackContent}>
+          <View style={styles.ratingSection}>
+            <Text style={styles.sectionTitle}>Rating</Text>
+            <View style={styles.starRating}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <Ionicons
+                    name={star <= rating ? "star" : "star-outline"}
+                    size={32}
+                    color={star <= rating ? "#F59E0B" : "#D1D5DB"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.feedbackSection}>
+            <Text style={styles.sectionTitle}>Feedback</Text>
+            <TextInput
+              style={styles.feedbackInput}
+              placeholder="Write your feedback here..."
+              value={feedback}
+              onChangeText={setFeedback}
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+
+        </ScrollView>
+
+        <View style={styles.modalActions}>
+          <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+            <Text style={styles.submitButtonText}>Submit Feedback</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// Badge Modal Component
+const BadgeModal = ({ volunteer, onSubmit, onClose }: any) => {
+  const [badgeType, setBadgeType] = useState('participation');
+  const [description, setDescription] = useState('');
+
+  const badgeTypes = [
+    { value: 'participation', label: 'Participation', icon: 'people', badgeName: 'Event Participant' },
+    { value: 'excellence', label: 'Excellence', icon: 'star', badgeName: 'Excellence Award' },
+    { value: 'leadership', label: 'Leadership', icon: 'trophy', badgeName: 'Leadership Badge' },
+    { value: 'dedication', label: 'Dedication', icon: 'heart', badgeName: 'Dedication Medal' },
+    { value: 'special', label: 'Special Recognition', icon: 'medal', badgeName: 'Special Recognition' },
+    { value: 'teamwork', label: 'Teamwork', icon: 'people-circle', badgeName: 'Team Player' },
+    { value: 'innovation', label: 'Innovation', icon: 'bulb', badgeName: 'Innovation Award' },
+    { value: 'commitment', label: 'Commitment', icon: 'time', badgeName: 'Commitment Badge' },
+    { value: 'impact', label: 'Impact', icon: 'trending-up', badgeName: 'Impact Creator' },
+    { value: 'mentor', label: 'Mentor', icon: 'school', badgeName: 'Mentor Badge' },
+  ];
+
+  const hasBadgeOfType = (type: string) => {
+    return !!(volunteer?.badges && volunteer.badges.some((badge: any) => badge.badgeType === type));
+  };
+
+  const handleSubmit = () => {
+    const selectedBadge = badgeTypes.find(badge => badge.value === badgeType);
+    const badgeName = selectedBadge?.badgeName || 'Badge';
+    onSubmit(badgeType, badgeName, description);
+  };
+
+  return (
+    <View style={styles.modalOverlay}>
+      <View style={styles.badgeModal}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Award Badge to {volunteer?.user?.name}</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.badgeContent}>
+          <View style={styles.badgeTypeSection}>
+            <Text style={styles.sectionTitle}>Badge Type</Text>
+            <View style={styles.badgeTypeGrid}>
+              {badgeTypes.map((type) => {
+                const isAwarded = hasBadgeOfType(type.value);
+                const isSelected = badgeType === type.value;
+                return (
+                  <TouchableOpacity
+                    key={type.value}
+                    onPress={() => !isAwarded && setBadgeType(type.value)}
+                    style={[
+                      styles.badgeTypeOption,
+                      isSelected && styles.badgeTypeOptionSelected,
+                      isAwarded && styles.badgeTypeOptionAwarded
+                    ]}
+                    disabled={!!isAwarded}
+                  >
+                    <Ionicons
+                      name={isAwarded ? "checkmark-circle" : (type.icon as any)}
+                      size={24}
+                      color={
+                        isAwarded ? '#10B981' : 
+                        isSelected ? '#3B82F6' : '#6B7280'
+                      }
+                    />
+                    <Text style={[
+                      styles.badgeTypeLabel,
+                      isSelected && styles.badgeTypeLabelSelected,
+                      isAwarded && styles.badgeTypeLabelAwarded
+                    ]}>
+                      {isAwarded ? `${type.label} (Awarded)` : type.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+
+          <View style={styles.badgeDescriptionSection}>
+            <Text style={styles.sectionTitle}>Description (Optional)</Text>
+            <TextInput
+              style={styles.badgeDescriptionInput}
+              placeholder="Enter description..."
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+        </ScrollView>
+
+        <View style={styles.modalActions}>
+          <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+            <Text style={styles.submitButtonText}>Award Badge</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -996,5 +1620,429 @@ const styles = StyleSheet.create({
   eventFilterTextActive: {
     color: '#3B82F6',
     fontWeight: '600',
+  },
+
+  // Volunteer Management Modal Styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  volunteerManagementModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '80%',
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  modalHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 1,
+    fontStyle: 'italic',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  volunteersLoadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  volunteersList: {
+    maxHeight: 400,
+  },
+  volunteerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalVolunteerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  volunteerAvatarContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  volunteerAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  volunteerAvatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  volunteerInitial: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  statusIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  volunteerDetails: {
+    flex: 1,
+  },
+  modalVolunteerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  volunteerEmail: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  volunteerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 2,
+  },
+  ratingText: {
+    fontSize: 10,
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 2,
+  },
+  badgesText: {
+    fontSize: 10,
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  volunteerActions: {
+    gap: 8,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    gap: 4,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  disabledButton: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#D1D5DB',
+  },
+  disabledButtonText: {
+    color: '#9CA3AF',
+  },
+  undoButton: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  undoButtonText: {
+    color: '#EF4444',
+  },
+
+  // Feedback Modal Styles
+  feedbackModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '80%',
+    padding: 20,
+  },
+  feedbackContent: {
+    maxHeight: 400,
+  },
+  ratingSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  starRating: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  starButton: {
+    padding: 4,
+  },
+  feedbackSection: {
+    marginBottom: 20,
+  },
+  feedbackInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    textAlignVertical: 'top',
+    minHeight: 100,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  eventIndicator: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  noVolunteersContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noVolunteersText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  statusDebug: {
+    fontSize: 11,
+    color: '#EF4444',
+    fontStyle: 'italic',
+    marginTop: 2,
+    fontWeight: 'bold',
+  },
+  timeStamp: {
+    fontSize: 10,
+    color: '#10B981',
+    fontStyle: 'italic',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+
+  // Badge Modal Styles
+  badgeModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '80%',
+    padding: 20,
+  },
+  badgeContent: {
+    maxHeight: 400,
+  },
+  badgeTypeSection: {
+    marginBottom: 20,
+  },
+  badgeTypeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  badgeTypeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    gap: 8,
+    minWidth: '45%',
+  },
+  badgeTypeOptionSelected: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#EBF8FF',
+  },
+  badgeTypeLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  badgeTypeLabelSelected: {
+    color: '#3B82F6',
+  },
+  badgeTypeOptionAwarded: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  badgeTypeLabelAwarded: {
+    color: '#10B981',
+  },
+  badgeDescriptionSection: {
+    marginBottom: 20,
+  },
+  badgeDescriptionInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+
+  // Attendance Styles
+  attendanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  attendanceText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
+  },
+  attendanceActions: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  attendanceLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  attendanceButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  attendanceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  attendedButton: {
+    backgroundColor: '#10B981',
+  },
+  notAttendedButton: {
+    backgroundColor: '#EF4444',
+  },
+  defaultStatusButton: {
+    backgroundColor: '#6B7280',
+  },
+   attendanceButtonText: {
+     fontSize: 12,
+     fontWeight: '600',
+     color: '#FFFFFF',
   },
 });

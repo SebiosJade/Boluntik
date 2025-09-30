@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../constants/Api';
+import { INTERESTS } from '../constants/Interests';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function InterestScreen() {
@@ -13,18 +14,8 @@ export default function InterestScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedInterests, setHasLoadedInterests] = useState(false);
 
-  const interests = [
-    { id: 'community', title: 'Community Services', icon: 'heart', color: '#EF4444', iconType: 'ionicons' },
-    { id: 'health', title: 'Health', icon: 'medical', color: '#10B981', iconType: 'ionicons' },
-    { id: 'human-rights', title: 'Human Rights', icon: 'fist-raised', color: '#F97316', iconType: 'fontawesome5' },
-    { id: 'animals', title: 'Animals', icon: 'paw', color: '#8B5CF6', iconType: 'fontawesome5' },
-    { id: 'disaster', title: 'Disaster Relief', icon: 'ambulance', color: '#EF4444', iconType: 'fontawesome5' },
-    { id: 'tech', title: 'Tech', icon: 'code', color: '#3B82F6', iconType: 'ionicons' },
-    { id: 'arts', title: 'Arts & Culture', icon: 'palette', color: '#EC4899', iconType: 'ionicons' },
-    { id: 'religious', title: 'Religious', icon: 'pray', color: '#F97316', iconType: 'fontawesome5' },
-    { id: 'education', title: 'Education', icon: 'book-open', color: '#3B82F6', iconType: 'ionicons' },
-    { id: 'environment', title: 'Environment', icon: 'leaf', color: '#10B981', iconType: 'ionicons' },
-  ];
+  // Use shared interests configuration
+  const interests = INTERESTS;
 
   // Load existing user interests on component mount
   useEffect(() => {
@@ -77,13 +68,8 @@ export default function InterestScreen() {
   };
 
   const handleContinue = async () => {
-    console.log('=== CONTINUE BUTTON DEBUG ===');
-    console.log('Selected interests:', selectedInterests);
-    console.log('Number of interests selected:', selectedInterests.length);
-    
     // Check if user has selected at least one interest
     if (selectedInterests.length === 0) {
-      console.log('ERROR: No interests selected');
       Alert.alert(
         'No Interests Selected',
         'Please select at least one interest to continue, or click Skip to proceed without selecting interests.',
@@ -94,8 +80,6 @@ export default function InterestScreen() {
 
     try {
       setIsLoading(true);
-      
-      console.log('Saving interests and setting onboarding to true...');
       
       // Save selected interests to backend and set onboarding to true
       const response = await fetch(API.updateUserInterests, {
@@ -112,8 +96,6 @@ export default function InterestScreen() {
         throw new Error(errorData.message || 'Failed to save interests');
       }
 
-      console.log('Interests saved successfully, onboarding set to true');
-      
       // Show success message
       Alert.alert(
         'Success!',
@@ -144,9 +126,6 @@ export default function InterestScreen() {
   };
 
   const handleSkip = async () => {
-    console.log('=== SKIP BUTTON DEBUG ===');
-    console.log('User clicked skip - setting onboarding to false');
-    
     try {
       setIsLoading(true);
       
@@ -164,11 +143,8 @@ export default function InterestScreen() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update onboarding status');
       }
-
-      console.log('Onboarding status set to false successfully');
       
       // Navigate to appropriate dashboard without requiring interests
-      console.log('Navigating to dashboard...');
       if (user?.role === 'organization') {
         router.replace('/organization');
       } else if (user?.role === 'admin') {

@@ -7,6 +7,7 @@ const { changePassword, deleteAccount } = require('./controllers/accountControll
 const { sendPasswordReset, verifyPasswordResetCode, resetPassword } = require('./controllers/passwordResetController');
 const { getUserInterests, updateUserInterests, getAvailableInterests } = require('./controllers/userInterestsController');
 const { getProfile, updateProfile, updateInterests, uploadAvatar, deleteAvatar, upload } = require('./controllers/profileController');
+const { authenticateToken } = require('../middleware/auth');
 const {
   signupValidation,
   loginValidation,
@@ -33,8 +34,8 @@ router.get('/me', getMe);
 router.patch('/onboarding', updateOnboarding);
 
 // Account management routes
-router.patch('/change-password', changePasswordValidation, changePassword);
-router.delete('/account', deleteAccountValidation, deleteAccount);
+router.patch('/change-password', authenticateToken, changePasswordValidation, changePassword);
+router.delete('/account', authenticateToken, deleteAccountValidation, deleteAccount);
 
 // Password reset routes
 router.post('/forgot-password', sendPasswordReset);
@@ -47,10 +48,10 @@ router.put('/interests', interestsValidation, updateUserInterests);
 router.get('/interests/available', getAvailableInterests);
 
 // Profile management routes
-router.get('/profile', getProfile);
-router.patch('/profile', profileUpdateValidation, updateProfile);
-router.patch('/interests', interestsValidation, updateInterests);
-router.post('/profile/avatar', upload.single('avatar'), uploadAvatar);
-router.delete('/profile/avatar', deleteAvatar);
+router.get('/profile', authenticateToken, getProfile);
+router.patch('/profile', authenticateToken, profileUpdateValidation, updateProfile);
+router.patch('/interests', authenticateToken, interestsValidation, updateInterests);
+router.post('/profile/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
+router.delete('/profile/avatar', authenticateToken, deleteAvatar);
 
 module.exports = router;
