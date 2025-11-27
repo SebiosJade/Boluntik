@@ -1,19 +1,20 @@
 import ProfileDropdown from '@/components/ProfileDropdown';
 import { useAuth } from '@/contexts/AuthContext';
-import { Event, eventService } from '@/services/eventService';
+import { eventService } from '@/services/eventService';
+import { Event } from '@/types';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { webAlert } from '../../utils/webAlert';
 
 const { width } = Dimensions.get('window');
 
 export default function OrganizationDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-  const [searchText, setSearchText] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-width));
   
@@ -21,9 +22,13 @@ export default function OrganizationDashboard() {
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [showViewAllModal, setShowViewAllModal] = useState(false);
 
-  // Load events from API
+  // Load events from API with throttling
   useEffect(() => {
-    loadEvents();
+    const timeoutId = setTimeout(() => {
+      loadEvents();
+    }, 200); // Slightly longer delay for home screen
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const loadEvents = async () => {
@@ -37,7 +42,7 @@ export default function OrganizationDashboard() {
       setCreatedEvents(events);
     } catch (error) {
       console.error('Failed to load events:', error);
-      Alert.alert('Error', 'Failed to load events');
+      webAlert('Error', 'Failed to load events');
     } finally {
       setIsLoadingEvents(false);
     }
@@ -149,9 +154,11 @@ export default function OrganizationDashboard() {
   const menuItems = [
     { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline' },
     { id: 'calendar', title: 'Calendar', icon: 'calendar-outline' },
+    { id: 'virtualhub', title: 'Virtual Hub', icon: 'videocam-outline' },
     { id: 'crowdfunding', title: 'Crowdfunding', icon: 'cash-outline' },
     { id: 'certificates', title: 'Certificates', icon: 'ribbon-outline' },
     { id: 'resources', title: 'Resources', icon: 'library-outline' },
+    { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
     { id: 'volunteers', title: 'Volunteers', icon: 'people-outline' },
     { id: 'reports', title: 'Reports', icon: 'document-text-outline' },
     { id: 'impact', title: 'Impact Tracker', icon: 'trending-up-outline' },
@@ -223,12 +230,16 @@ export default function OrganizationDashboard() {
                   // Already on dashboard, just close menu
                 } else if (item.id === 'calendar') {
                   router.push('/(organizationTabs)/calendar');
+                } else if (item.id === 'virtualhub') {
+                  router.push('/(organizationTabs)/virtualhub');
                 } else if (item.id === 'crowdfunding') {
                   router.push('/(organizationTabs)/crowdfundingorg');
                 } else if (item.id === 'certificates') {
                   router.push('/(organizationTabs)/certificates');
                 } else if (item.id === 'resources') {
                   router.push('/(organizationTabs)/resources');
+                } else if (item.id === 'emergency') {
+                  router.push('/(organizationTabs)/emergency');
                 } else if (item.id === 'volunteers') {
                   router.push('/(organizationTabs)/volunteers');
                 } else if (item.id === 'reports') {
@@ -240,7 +251,7 @@ export default function OrganizationDashboard() {
             >
               <Ionicons
                 name={item.icon as any}
-                size={20}
+                size={24}
                 color={item.id === 'dashboard' ? '#3B82F6' : '#374151'}
               />
               <Text
@@ -727,47 +738,50 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: width * 0.7, // Adjust as needed
-    height: '100%',
+    bottom: 0,
+    width: width * 0.7,
     backgroundColor: '#FFFFFF',
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
+    padding: 20,
     zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   sidebarHeader: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    marginBottom: 20,
+    paddingTop: 40,
   },
   sidebarTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#111827',
   },
   menuContainer: {
-    padding: 20,
+    gap: 12,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 12,
   },
   activeMenuItem: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#E0E7FF',
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
   },
   menuItemText: {
-    marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',
     color: '#374151',
   },
   activeMenuItemText: {
     color: '#3B82F6',
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { API } from '../constants/Api';
 import { PROFILE_INTERESTS } from '../constants/Interests';
+import { webAlert } from '../utils/webAlert';
 
 export const useProfileEdit = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -104,7 +104,7 @@ export const useProfileEdit = () => {
   // Validate form
   const validateForm = () => {
     if (!formData.name.trim()) {
-      Alert.alert('Error', 'Name is required');
+      webAlert('Error', 'Name is required', undefined, 'warning');
       return false;
     }
     return true;
@@ -127,16 +127,6 @@ export const useProfileEdit = () => {
         skills: formData.skills,
         availability: formData.availability
       };
-      
-      console.log('Sending profile update request to:', API.updateProfile);
-      console.log('Request data:', {
-        name: profileData.name,
-        bio: profileData.bio,
-        phone: profileData.phone,
-        location: profileData.location,
-        skills: profileData.skills,
-        availability: profileData.availability
-      });
       
       // Update profile information
       const profileResponse = await fetch(API.updateProfile, {
@@ -163,30 +153,21 @@ export const useProfileEdit = () => {
       });
 
       if (profileResponse.ok && interestsResponse.ok) {
-        Alert.alert(
-          'Success',
-          'Your profile has been updated successfully!',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                closeEditModal();
-                onSuccess();
-              },
-            },
-          ]
-        );
+        // Show success alert using webAlert (this works in the parent component)
+        webAlert('Success', 'Your profile has been updated successfully!');
+        closeEditModal();
+        onSuccess();
       } else {
         const profileError = await profileResponse.json();
         const interestsError = await interestsResponse.json();
         
         const errorMessage = profileError.message || interestsError.message || 'Failed to update profile';
         
-        Alert.alert('Error', errorMessage);
+        webAlert('Error', errorMessage, undefined, 'error');
       }
     } catch (error) {
       console.error('Update profile error:', error);
-      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+      webAlert('Error', 'Network error. Please check your connection and try again.', undefined, 'error');
     } finally {
       setIsEditing(false);
     }

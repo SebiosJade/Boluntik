@@ -8,9 +8,9 @@ const { width } = Dimensions.get('window');
 
 export default function ReportsScreen() {
   const router = useRouter();
+  const [searchText, setSearchText] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-width));
-  const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -42,9 +42,12 @@ export default function ReportsScreen() {
 
   const menuItems = [
     { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline' },
+    { id: 'calendar', title: 'Calendar', icon: 'calendar-outline' },
+    { id: 'virtualhub', title: 'Virtual Hub', icon: 'videocam-outline' },
     { id: 'crowdfunding', title: 'Crowdfunding', icon: 'cash-outline' },
     { id: 'certificates', title: 'Certificates', icon: 'ribbon-outline' },
     { id: 'resources', title: 'Resources', icon: 'library-outline' },
+    { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
     { id: 'volunteers', title: 'Volunteers', icon: 'people-outline' },
     { id: 'reports', title: 'Reports', icon: 'document-text-outline' },
     { id: 'impact', title: 'Impact Tracker', icon: 'trending-up-outline' },
@@ -57,7 +60,7 @@ export default function ReportsScreen() {
       status: 'Published',
       date: 'April 22, 2023',
       author: 'Jane Smith',
-      image: require('../../assets/images/react-logo.png'),
+      image: require('../../assets/images/voluntech-logo.png'),
       volunteers: 24,
       hoursServed: 72,
       peopleImpacted: '150+',
@@ -71,8 +74,8 @@ export default function ReportsScreen() {
       communityImpact: 'The event significantly improved the local environment and raised community awareness about waste management. Many participants expressed interest in future environmental initiatives.',
       nextSteps: 'Planning quarterly beach cleanups and educational workshops on waste reduction and recycling.',
       photos: [
-        require('../../assets/images/react-logo.png'),
-        require('../../assets/images/react-logo.png')
+        require('../../assets/images/voluntech-logo.png'),
+        require('../../assets/images/voluntech-logo.png')
       ]
     },
     {
@@ -81,7 +84,7 @@ export default function ReportsScreen() {
       status: 'Draft',
       date: 'March 15, 2023',
       author: 'John Doe',
-      image: require('../../assets/images/react-logo.png'),
+      image: require('../../assets/images/voluntech-logo.png'),
       volunteers: 18,
       hoursServed: 45,
       peopleImpacted: '300+',
@@ -94,7 +97,7 @@ export default function ReportsScreen() {
       communityImpact: 'Provided essential support to families facing food insecurity.',
       nextSteps: 'Establish ongoing food collection program.',
       photos: [
-        require('../../assets/images/react-logo.png')
+        require('../../assets/images/voluntech-logo.png')
       ]
     }
   ];
@@ -167,22 +170,28 @@ export default function ReportsScreen() {
                 
                 if (item.id === 'dashboard') {
                   router.push('/(organizationTabs)/home');
+                } else if (item.id === 'calendar') {
+                  router.push('/(organizationTabs)/calendar');
+                } else if (item.id === 'virtualhub') {
+                  router.push('/(organizationTabs)/virtualhub');
                 } else if (item.id === 'crowdfunding') {
                   router.push('/(organizationTabs)/crowdfundingorg');
                 } else if (item.id === 'certificates') {
                   router.push('/(organizationTabs)/certificates');
                 } else if (item.id === 'resources') {
                   router.push('/(organizationTabs)/resources');
-                                        } else if (item.id === 'volunteers') {
-                          router.push('/(organizationTabs)/volunteers');
-                        } else if (item.id === 'impact') {
-                          router.push('/(organizationTabs)/impacttracker');
-                        }
+                } else if (item.id === 'emergency') {
+                  router.push('/(organizationTabs)/emergency');
+                } else if (item.id === 'volunteers') {
+                  router.push('/(organizationTabs)/volunteers');
+                } else if (item.id === 'impact') {
+                  router.push('/(organizationTabs)/impacttracker');
+                }
               }}
             >
               <Ionicons
                 name={item.icon as any}
-                size={20}
+                size={24}
                 color={item.id === 'reports' ? '#3B82F6' : '#374151'}
               />
               <Text
@@ -271,6 +280,7 @@ export default function ReportsScreen() {
         visible={isModalVisible}
         animationType="slide"
         transparent={true}
+        presentationStyle="pageSheet"
         onRequestClose={handleCloseModal}
       >
         <View style={styles.modalOverlay}>
@@ -623,6 +633,7 @@ const styles = StyleSheet.create({
   },
   activeMenuItemText: {
     color: '#3B82F6',
+    fontWeight: '700',
   },
   // Modal Styles
   modalOverlay: {

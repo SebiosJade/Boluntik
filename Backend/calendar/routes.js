@@ -25,12 +25,23 @@ const {
   bulkMarkAttendance
 } = require('./controllers/attendanceController');
 const {
+  submitReview,
+  getMyReview,
+  getEventReviews,
+  getOrganizationReviews,
+  getOrganizationBadges,
+  deleteReview,
+  getUserAttendanceStatus,
+  createAttendanceForTesting
+} = require('./controllers/reviewController');
+const {
   eventValidation,
   eventUpdateValidation,
   eventIdValidation,
   userIdValidation,
   organizationIdValidation
 } = require('../middleware/validation');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -96,5 +107,30 @@ router.patch('/:eventId/attendance/:userId', eventIdValidation, userIdValidation
 
 // Bulk mark attendance for multiple volunteers
 router.patch('/:eventId/attendance/bulk', eventIdValidation, bulkMarkAttendance);
+
+// Review & Rating routes
+// Submit or update review (requires authentication)
+router.post('/:eventId/review', authenticateToken, submitReview);
+
+// Get volunteer's own review for an event
+router.get('/:eventId/my-review', authenticateToken, getMyReview);
+
+// Get all reviews for an event
+router.get('/:eventId/reviews', getEventReviews);
+
+// Delete own review
+router.delete('/:eventId/review', authenticateToken, deleteReview);
+
+// Get all reviews for an organization
+router.get('/organization/:orgId/reviews', getOrganizationReviews);
+
+// Get organization badges
+router.get('/organization/:orgId/badges', getOrganizationBadges);
+
+// Get user attendance status for all events
+router.get('/user/:userId/attendance-status', authenticateToken, getUserAttendanceStatus);
+
+// Development helper: Create/update EventParticipant with attended status
+router.post('/dev/mark-attended/:eventId/:userId', authenticateToken, createAttendanceForTesting);
 
 module.exports = router;

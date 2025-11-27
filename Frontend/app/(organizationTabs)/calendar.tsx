@@ -1,11 +1,12 @@
 import ProfileDropdown from '@/components/ProfileDropdown';
 import { useAuth } from '@/contexts/AuthContext';
-import { Event, eventService } from '@/services/eventService';
+import { eventService } from '@/services/eventService';
+import { Event } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-// Using a simpler approach for Expo compatibility
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Animated, Dimensions, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { webAlert } from '../../utils/webAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -69,24 +70,26 @@ export default function CalendarScreen() {
   const [editFormErrors, setEditFormErrors] = useState<{[key: string]: string}>({});
   const [isSaving, setIsSaving] = useState(false);
   
-  // Load events from API
+  // Load events from API with throttling
   useEffect(() => {
-    loadEvents();
+    const timeoutId = setTimeout(() => {
+      loadEvents();
+    }, 100); // Small delay to prevent rapid successive calls
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const loadEvents = async () => {
-    console.log('Loading events for user ID:', user?.id);
     if (!user?.id || user.id.trim() === '') {
       return;
     }
     setIsLoadingEvents(true);
     try {
       const events = await eventService.getEventsByUser(user.id);
-      console.log('Loaded events:', events);
       setCreatedEvents(events);
     } catch (error) {
       console.error('Failed to load events:', error);
-      Alert.alert('Error', 'Failed to load events');
+      webAlert('Error', 'Failed to load events');
     } finally {
       setIsLoadingEvents(false);
     }
@@ -273,8 +276,8 @@ export default function CalendarScreen() {
       endTime: event.endTime || '',
       location: event.location || '',
       maxParticipants: event.maxParticipants || '',
-      cause: event.cause ? event.cause.split(', ').filter(item => item.trim()) : [],
-      skills: event.skills ? event.skills.split(', ').filter(item => item.trim()) : [],
+      cause: event.cause ? event.cause.split(', ').filter((item: string) => item.trim()) : [],
+      skills: event.skills ? event.skills.split(', ').filter((item: string) => item.trim()) : [],
       eventType: event.eventType || '',
       difficulty: event.difficulty || '',
       ageRestriction: event.ageRestriction || '',
@@ -417,7 +420,7 @@ export default function CalendarScreen() {
         )
       );
 
-      Alert.alert('Success', 'Event updated successfully!', [
+      webAlert('Success', 'Event updated successfully!', [
         { text: 'OK', onPress: () => {
           closeEventEdit();
           loadEvents(); // Refresh events after update
@@ -425,14 +428,14 @@ export default function CalendarScreen() {
       ]);
     } catch (error) {
       console.error('Failed to update event:', error);
-      Alert.alert('Error', 'Failed to update event. Please try again.');
+      webAlert('Error', 'Failed to update event. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDeleteEvent = async (event: Event) => {
-    Alert.alert(
+    webAlert(
       'Delete Event',
       `Are you sure you want to delete "${event.title}"? This action cannot be undone.`,
       [
@@ -452,10 +455,10 @@ export default function CalendarScreen() {
                 prev.filter(e => e.id !== event.id)
               );
               
-              Alert.alert('Success', 'Event deleted successfully!');
+              webAlert('Success', 'Event deleted successfully!');
             } catch (error) {
               console.error('Failed to delete event:', error);
-              Alert.alert('Error', 'Failed to delete event. Please try again.');
+              webAlert('Error', 'Failed to delete event. Please try again.');
             }
           },
         },
@@ -503,10 +506,10 @@ export default function CalendarScreen() {
       // Update the selected event
       setSelectedEvent(updatedEvent);
 
-      Alert.alert('Success', `Event status updated to ${newStatus}!`);
+      webAlert('Success', `Event status updated to ${newStatus}!`);
     } catch (error) {
       console.error('Failed to update event status:', error);
-      Alert.alert('Error', 'Failed to update event status. Please try again.');
+      webAlert('Error', 'Failed to update event status. Please try again.');
     }
   };
 
@@ -624,9 +627,11 @@ export default function CalendarScreen() {
   const menuItems = [
     { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline' },
     { id: 'calendar', title: 'Calendar', icon: 'calendar-outline' },
+    { id: 'virtualhub', title: 'Virtual Hub', icon: 'videocam-outline' },
     { id: 'crowdfunding', title: 'Crowdfunding', icon: 'cash-outline' },
     { id: 'certificates', title: 'Certificates', icon: 'ribbon-outline' },
     { id: 'resources', title: 'Resources', icon: 'library-outline' },
+    { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
     { id: 'volunteers', title: 'Volunteers', icon: 'people-outline' },
     { id: 'reports', title: 'Reports', icon: 'document-text-outline' },
     { id: 'impact', title: 'Impact Tracker', icon: 'trending-up-outline' },
@@ -1060,7 +1065,7 @@ export default function CalendarScreen() {
 
   const handleCreateEvent = async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fix the errors in the form before submitting.');
+      webAlert('Validation Error', 'Please fix the errors in the form before submitting.');
       return;
     }
 
@@ -1096,7 +1101,7 @@ export default function CalendarScreen() {
       // Add the new event to the local state
       setCreatedEvents(prev => [newEvent, ...prev]);
 
-      Alert.alert('Success', 'Event created successfully!', [
+      webAlert('Success', 'Event created successfully!', [
         { text: 'OK', onPress: () => {
           closeEventModal();
           // Reload events to ensure the new event appears
@@ -1105,7 +1110,7 @@ export default function CalendarScreen() {
       ]);
     } catch (error) {
       console.error('Failed to create event:', error);
-      Alert.alert('Error', 'Failed to create event. Please try again.');
+      webAlert('Error', 'Failed to create event. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1150,12 +1155,16 @@ export default function CalendarScreen() {
                   router.push('/(organizationTabs)/home');
                 } else if (item.id === 'calendar') {
                   // Already on calendar, just close menu
+                } else if (item.id === 'virtualhub') {
+                  router.push('/(organizationTabs)/virtualhub');
                 } else if (item.id === 'crowdfunding') {
                   router.push('/(organizationTabs)/crowdfundingorg');
                 } else if (item.id === 'certificates') {
                   router.push('/(organizationTabs)/certificates');
                 } else if (item.id === 'resources') {
                   router.push('/(organizationTabs)/resources');
+                } else if (item.id === 'emergency') {
+                  router.push('/(organizationTabs)/emergency');
                 } else if (item.id === 'volunteers') {
                   router.push('/(organizationTabs)/volunteers');
                 } else if (item.id === 'reports') {
@@ -1167,7 +1176,7 @@ export default function CalendarScreen() {
             >
               <Ionicons
                 name={item.icon as any}
-                size={20}
+                size={24}
                 color={item.id === 'calendar' ? '#3B82F6' : '#374151'}
               />
               <Text
@@ -1532,7 +1541,7 @@ export default function CalendarScreen() {
       <Modal
         visible={isEventModalOpen}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={closeEventModal}
       >
         <SafeAreaView style={styles.modalContainer}>
@@ -2258,7 +2267,7 @@ export default function CalendarScreen() {
       <Modal
         visible={showEventDetails}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={closeEventDetails}
       >
         <SafeAreaView style={styles.simpleModalContainer}>
@@ -2329,7 +2338,7 @@ export default function CalendarScreen() {
       <Modal
         visible={showAllEvents}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={closeAllEvents}
       >
         <SafeAreaView style={styles.simpleModalContainer}>
@@ -2411,7 +2420,7 @@ export default function CalendarScreen() {
       <Modal
         visible={showEventEdit}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={closeEventEdit}
       >
         <SafeAreaView style={styles.simpleModalContainer}>
@@ -3237,47 +3246,50 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    bottom: 0,
     width: width * 0.7,
-    height: '100%',
     backgroundColor: '#FFFFFF',
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
+    padding: 20,
     zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   sidebarHeader: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    marginBottom: 20,
+    paddingTop: 40,
   },
   sidebarTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#111827',
   },
   menuContainer: {
-    padding: 20,
+    gap: 12,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 12,
   },
   activeMenuItem: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#E0E7FF',
     borderLeftWidth: 4,
     borderLeftColor: '#3B82F6',
   },
   menuItemText: {
-    marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',
     color: '#374151',
   },
   activeMenuItemText: {
     color: '#3B82F6',
+    fontWeight: '700',
   },
   // Modal Styles
   modalContainer: {

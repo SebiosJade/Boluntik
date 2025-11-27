@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import React from 'react';
 
 export default function Layout() {
   return (
@@ -14,19 +13,7 @@ export default function Layout() {
         }}
       />
       <Stack.Screen
-        name="ads"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="analytics"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="categories"
         options={{
           headerShown: false,
         }}
@@ -38,7 +25,7 @@ export default function Layout() {
         }}
       />
       <Stack.Screen
-        name="fees"
+        name="reports"
         options={{
           headerShown: false,
         }}
@@ -56,19 +43,13 @@ export default function Layout() {
         }}
       />
       <Stack.Screen
-        name="technical"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="users"
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="virtual"
+        name="crowdfunding"
         options={{
           headerShown: false,
         }}

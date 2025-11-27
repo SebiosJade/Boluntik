@@ -9,9 +9,9 @@ const { width } = Dimensions.get('window');
 
 export default function ImpactTrackerScreen() {
   const router = useRouter();
+  const [searchText, setSearchText] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-width));
-  const [searchText, setSearchText] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState('This Year');
 
   const toggleMenu = () => {
@@ -41,9 +41,12 @@ export default function ImpactTrackerScreen() {
 
   const menuItems = [
     { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline' },
+    { id: 'calendar', title: 'Calendar', icon: 'calendar-outline' },
+    { id: 'virtualhub', title: 'Virtual Hub', icon: 'videocam-outline' },
     { id: 'crowdfunding', title: 'Crowdfunding', icon: 'cash-outline' },
     { id: 'certificates', title: 'Certificates', icon: 'ribbon-outline' },
     { id: 'resources', title: 'Resources', icon: 'library-outline' },
+    { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
     { id: 'volunteers', title: 'Volunteers', icon: 'people-outline' },
     { id: 'reports', title: 'Reports', icon: 'document-text-outline' },
     { id: 'impact', title: 'Impact Tracker', icon: 'trending-up-outline' },
@@ -107,12 +110,18 @@ export default function ImpactTrackerScreen() {
                 
                 if (item.id === 'dashboard') {
                   router.push('/(organizationTabs)/home');
+                } else if (item.id === 'calendar') {
+                  router.push('/(organizationTabs)/calendar');
+                } else if (item.id === 'virtualhub') {
+                  router.push('/(organizationTabs)/virtualhub');
                 } else if (item.id === 'crowdfunding') {
                   router.push('/(organizationTabs)/crowdfundingorg');
                 } else if (item.id === 'certificates') {
                   router.push('/(organizationTabs)/certificates');
                 } else if (item.id === 'resources') {
                   router.push('/(organizationTabs)/resources');
+                } else if (item.id === 'emergency') {
+                  router.push('/(organizationTabs)/emergency');
                 } else if (item.id === 'volunteers') {
                   router.push('/(organizationTabs)/volunteers');
                 } else if (item.id === 'reports') {
@@ -122,7 +131,7 @@ export default function ImpactTrackerScreen() {
             >
               <Ionicons
                 name={item.icon as any}
-                size={20}
+                size={24}
                 color={item.id === 'impact' ? '#3B82F6' : '#374151'}
               />
               <Text
@@ -649,5 +658,6 @@ const styles = StyleSheet.create({
   },
   activeMenuItemText: {
     color: '#3B82F6',
+    fontWeight: '700',
   },
 });

@@ -257,17 +257,17 @@ async function resetPassword(req, res) {
 async function sendPasswordResetEmail(email, resetCode) {
   const nodemailer = require('nodemailer');
   
-  // Email configuration (for development, you can use a service like Gmail, SendGrid, etc.)
+  // Email configuration using environment variables
   const emailTransporter = nodemailer.createTransport({
-    service: 'gmail', // You can change this to other services
+    service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER || 'your-email@gmail.com',
-      pass: process.env.EMAIL_PASS || 'your-app-password'
+      user: process.env.EMAIL_USER || 'voluntech4@gmail.com',
+      pass: process.env.EMAIL_PASS || 'yqnm uduy dsdx swsm'
     }
   });
 
-  // For development/testing, you can use a mock email service
-  const isDevelopment = process.env.NODE_ENV !== 'production';
+  // Enable email sending for production use
+  const isDevelopment = false; // ENABLED FOR EMAIL SENDING
 
   if (isDevelopment) {
     // In development, just log the reset code

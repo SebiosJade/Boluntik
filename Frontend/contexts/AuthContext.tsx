@@ -1,22 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-interface AuthContextType {
-  isAuthenticated: boolean;
-  login: (userData: any, rememberMe?: boolean) => void;
-  logout: () => void;
-  user: any | null;
-  token: string | null;
-  isLoading: boolean;
-}
+import { AuthContextType, LoginResponse, User } from '../types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState(true);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [needsOnboarding,setNeedsOnboarding] = useState(false);
   const [isNavigationReady, setIsNavigationReady] = useState(false);
@@ -91,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, segments, isNavigationReady]);
 
-  const login = async (userData: any, rememberMe: boolean = false) => {
+  const login = async (userData: LoginResponse, rememberMe: boolean = false) => {
     
     if (!userData || !userData.user || !userData.user.id) {
       console.error('AuthContext login - Invalid user data received:', userData);

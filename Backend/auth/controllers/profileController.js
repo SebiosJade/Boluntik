@@ -58,6 +58,10 @@ async function getProfile(req, res) {
         skills: user.skills || [],
         availability: user.availability || [],
         interests: user.interests || [],
+        badges: user.badges || [],
+        certificates: user.certificates || [],
+        lastLoginAt: user.lastLoginAt,
+        loginCount: user.loginCount || 0,
         createdAt: user.createdAt,
         hasCompletedOnboarding: user.hasCompletedOnboarding
       }

@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import React from 'react';
 
 export default function Layout() {
   return (
@@ -32,13 +31,13 @@ export default function Layout() {
         }}
       />
       <Stack.Screen
-        name="volunteers"
+        name="certificates"
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="certificates"
+        name="volunteers"
         options={{
           headerShown: false,
         }}
@@ -51,6 +50,12 @@ export default function Layout() {
       />
       <Stack.Screen
         name="impacttracker"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="virtualhub"
         options={{
           headerShown: false,
         }}

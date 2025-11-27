@@ -24,12 +24,21 @@ function resolveDevHost(): string | null {
 }
 
 const ANDROID_EMULATOR_HOST = 'http://10.0.2.2:4000';
-const LOCALHOST = 'http://192.168.68.126:4000';
+const LAN_HOST = 'http://192.168.68.118:4000';
+const WEB_HOST = 'http://localhost:4000';
 
+// FORCE web to use localhost, mobile can use LAN
 export const API_BASE_URL =
   ENV_URL ||
-  resolveDevHost() ||
-  Platform.select({ android: ANDROID_EMULATOR_HOST, ios: LOCALHOST, default: LOCALHOST });
+  (Platform.OS === 'web' 
+    ? WEB_HOST 
+    : (resolveDevHost() || Platform.select({ 
+        android: ANDROID_EMULATOR_HOST, 
+        ios: LAN_HOST, 
+        web: WEB_HOST,
+        default: LAN_HOST 
+      }))
+  );
 
 export const API = {
   BASE_URL: API_BASE_URL,
@@ -70,5 +79,45 @@ export const API = {
     getAttendance: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/attendance`,
     markAttendance: (eventId: string, userId: string) => `${API_BASE_URL}/api/events/${eventId}/attendance/${userId}`,
     bulkMarkAttendance: (eventId: string) => `${API_BASE_URL}/api/events/${eventId}/attendance/bulk`,
+  },
+
+  // Subscription management
+  subscriptions: {
+    getPlans: `${API_BASE_URL}/api/subscriptions/plans`,
+    getCurrent: (orgId: string) => `${API_BASE_URL}/api/subscriptions/current/${orgId}`,
+    create: `${API_BASE_URL}/api/subscriptions/create`,
+    getUsage: (orgId: string) => `${API_BASE_URL}/api/subscriptions/usage/${orgId}`,
+    checkLimit: (orgId: string, type: string) => `${API_BASE_URL}/api/subscriptions/check-limit/${orgId}/${type}`,
+    incrementUsage: (orgId: string, type: string) => `${API_BASE_URL}/api/subscriptions/increment-usage/${orgId}/${type}`,
+    getHistory: (orgId: string) => `${API_BASE_URL}/api/subscriptions/history/${orgId}`,
+    // Admin endpoints
+    getAll: `${API_BASE_URL}/api/subscriptions/admin/all`,
+    getStats: `${API_BASE_URL}/api/subscriptions/admin/stats`,
+  },
+
+  // Virtual Event management
+  virtualEvents: {
+    getAll: `${API_BASE_URL}/api/virtual/events`,
+    getById: (id: string) => `${API_BASE_URL}/api/virtual/events/${id}`,
+    getByOrganization: (orgId: string) => `${API_BASE_URL}/api/virtual/organizations/${orgId}/events`,
+    getUserJoined: `${API_BASE_URL}/api/virtual/users/joined-events`,
+    create: `${API_BASE_URL}/api/virtual/events`,
+    update: (id: string) => `${API_BASE_URL}/api/virtual/events/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/api/virtual/events/${id}`,
+    join: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/join`,
+    unjoin: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/unjoin`,
+    start: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/start`,
+    end: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/end`,
+    updateGoogleMeet: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/google-meet`,
+    getParticipants: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/participants`,
+    fixParticipants: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/fix-participants`,
+    // Task management
+    getTasks: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/tasks`,
+    addTask: (eventId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/tasks`,
+    updateTask: (eventId: string, taskId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/tasks/${taskId}`,
+    deleteTask: (eventId: string, taskId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/tasks/${taskId}`,
+    uploadTaskOutput: (eventId: string, taskId: string) => `${API_BASE_URL}/api/virtual/events/${eventId}/tasks/${taskId}/outputs`,
+    deleteTaskOutput: (eventId: string, taskId: string, outputIndex: number) => `${API_BASE_URL}/api/virtual/events/${eventId}/tasks/${taskId}/outputs/${outputIndex}`,
+    uploadTaskFiles: `${API_BASE_URL}/api/virtual/upload-task-files`,
   },
 };

@@ -2,7 +2,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { webAlert } from '../utils/webAlert';
+import NotificationBadge from './NotificationBadge';
 
 interface ProfileDropdownProps {
   iconSize?: number;
@@ -28,7 +30,7 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
   const handleLogout = () => {
     setShowDropdown(false);
     
-    Alert.alert(
+    webAlert(
       'Logout Confirmation',
       'Are you sure you want to logout? You will need to sign in again to access your account.',
       [
@@ -43,7 +45,8 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
             logout();
           },
         },
-      ]
+      ],
+      'warning'
     );
   };
 
@@ -57,7 +60,7 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
           </TouchableOpacity>
         )}
         <Image
-          source={require('../assets/images/react-logo.png')}
+          source={require('../assets/images/voluntech-logo.png')}
           style={styles.logo}
           resizeMode="contain"
           accessible
@@ -66,16 +69,11 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
         <Text style={styles.brand}>VOLUNTECH</Text>
       </View>
       <View style={styles.profileContainer}>
-        <TouchableOpacity
+        <NotificationBadge 
+          iconSize={32} 
+          iconColor="#111827"
           style={styles.notificationIcon}
-          accessibilityRole="button"
-          accessibilityLabel="View notifications"
-          onPress={() => {
-            router.push('/notification')
-          }}
-        >
-          <Ionicons name="notifications-outline" size={32} color="#111827" />
-        </TouchableOpacity>
+        />
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="View profile options"
@@ -89,6 +87,7 @@ const ProfileDropdown = ({ iconSize = 32, iconColor = "#374151", showMenuButton 
             visible={showDropdown}
             transparent={true}
             animationType="fade"
+            presentationStyle="pageSheet"
             onRequestClose={() => setShowDropdown(false)}
           >
             <TouchableOpacity 
@@ -136,8 +135,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   logo: { 
-    width: 28, 
-    height: 28 
+    width: 40, 
+    height: 40 
   },
   brand: { 
     fontSize: 12, 

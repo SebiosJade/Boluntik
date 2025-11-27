@@ -6,7 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { AlertProvider } from '../contexts/AlertContext';
 import { AuthProvider } from '../contexts/AuthContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -22,8 +24,10 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
+        <NotificationProvider>
+          <AlertProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="interest" options={{ headerShown: false }} />
@@ -35,10 +39,14 @@ export default function RootLayout() {
             <Stack.Screen name="(volunteerTabs)" options={{ headerShown: false}} />
             <Stack.Screen name="(organizationTabs)" options={{ headerShown: false}} />
             <Stack.Screen name="(adminTabs)" options={{ headerShown: false}} />
-            <Stack.Screen name="+not-found" />
+        <Stack.Screen name="chat" options={{ headerShown: false}} />
+        <Stack.Screen name="chatroom" options={{ headerShown: false}} />
+        <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
+        </AlertProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

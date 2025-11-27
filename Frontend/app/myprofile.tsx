@@ -6,27 +6,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EditProfileModal } from '../components/EditProfileModal';
+import EnhancedActivityHistory from '../components/EnhancedActivityHistory';
+import EnhancedBadgesSection from '../components/EnhancedBadgesSection';
+import EnhancedCertificatesSection from '../components/EnhancedCertificatesSection';
+import EnhancedOrganizationBadges from '../components/EnhancedOrganizationBadges';
+import { OrganizationBadgesSection } from '../components/OrganizationBadgesSection';
+import { RateReviewModal } from '../components/RateReviewModal';
+import { ReviewsList } from '../components/ReviewsList';
 import { API } from '../constants/Api';
 import { getInterestTitle } from '../constants/Interests';
 import { useAuth } from '../contexts/AuthContext';
+import { useChangePassword } from '../hooks/useChangePassword';
 import { useProfileEdit } from '../hooks/useProfileEdit';
 import { deleteAvatar, uploadAvatar } from '../services/avatarService';
-import { Event, eventService } from '../services/eventService';
-
-// Constants - Removed hardcoded BADGES as we now use dynamic badges based on user data
-
-const INTEREST_DISPLAY_MAP: { [key: string]: string } = {
-  'community': 'Community Services',
-  'health': 'Health',
-  'human-rights': 'Human Rights',
-  'animals': 'Animals',
-  'disaster': 'Disaster Relief',
-  'tech': 'Tech',
-  'arts': 'Arts & Culture',
-  'religious': 'Religious',
-  'education': 'Education',
-  'environment': 'Environment'
-};
+import { eventService } from '../services/eventService';
+import { Review, reviewService } from '../services/reviewService';
+import { Event } from '../types';
+import { webAlert } from '../utils/webAlert';
 
 // Helper functions
 
@@ -46,6 +42,384 @@ const getRoleDisplayName = (role: string) => {
     default:
       return role;
   }
+};
+
+// Certificates List Component
+const CertificatesList = ({ userId, token }: { userId: string; token: string }) => {
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCertificatePreview, setShowCertificatePreview] = useState(false);
+  const [previewCertificate, setPreviewCertificate] = useState<any>(null);
+
+  useEffect(() => {
+    loadCertificates();
+  }, [userId]);
+
+  const loadCertificates = async () => {
+    try {
+      const apiUrl = API.BASE_URL;
+      const response = await fetch(`${apiUrl}/api/certificates/volunteer/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Sort certificates by awardedAt date (newest first)
+        const sortedCertificates = (data.certificates || []).sort((a: any, b: any) => {
+          const dateA = new Date(a.awardedAt).getTime();
+          const dateB = new Date(b.awardedAt).getTime();
+          return dateB - dateA; // Newest first
+        });
+        setCertificates(sortedCertificates);
+      } else {
+        console.error('Failed to load certificates:', data.message);
+      }
+    } catch (error) {
+      console.error('Error loading certificates:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePreviewCertificate = async (certificate: any) => {
+    try {
+      const apiUrl = API.BASE_URL;
+      
+      const response = await fetch(`${apiUrl}/api/certificates/generate/${userId}/${certificate.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setPreviewCertificate(data.certificate);
+        setShowCertificatePreview(true);
+      } else {
+        webAlert('Error', data.message || 'Failed to load certificate');
+      }
+    } catch (error) {
+      webAlert('Error', 'Failed to load certificate');
+    }
+  };
+
+
+  if (isLoading) {
+    return (
+      <View style={styles.certificatesLoadingContainer}>
+        <Text style={styles.certificatesLoadingText}>Loading certificates...</Text>
+      </View>
+    );
+  }
+
+  if (certificates.length === 0) {
+    return (
+      <View style={styles.certificatesEmptyContainer}>
+        <Ionicons name="ribbon-outline" size={48} color="#D1D5DB" />
+        <Text style={styles.certificatesEmptyText}>No certificates yet</Text>
+        <Text style={styles.certificatesEmptySubtext}>Complete volunteer events to earn certificates!</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.certificatesListContainer}>
+      {certificates.map((certificate, index) => (
+        <View key={certificate.id} style={styles.certificateCard}>
+          <View style={styles.certificateHeader}>
+            <View style={styles.certificateIcon}>
+              <Ionicons 
+                name={certificate.certificateIcon || "ribbon-outline"} 
+                size={24} 
+                color={certificate.certificateColor || "#1E40AF"} 
+              />
+            </View>
+            <View style={styles.certificateInfo}>
+              <Text style={styles.certificateTitle}>{certificate.certificateTitle || 'Certificate'}</Text>
+              <Text style={styles.certificateEvent}>{certificate.eventTitle}</Text>
+              <Text style={styles.certificateDate}>
+                Awarded on {new Date(certificate.awardedAt).toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.certificateActions}>
+            <TouchableOpacity
+              style={styles.certificateActionButton}
+              onPress={() => handlePreviewCertificate(certificate)}
+            >
+              <Ionicons name="eye-outline" size={16} color="#3B82F6" />
+              <Text style={styles.certificateActionText}>Preview</Text>
+            </TouchableOpacity>
+            
+          </View>
+        </View>
+      ))}
+
+      {/* Certificate Preview Modal */}
+      {showCertificatePreview && previewCertificate && (
+        <Modal
+          visible={showCertificatePreview}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowCertificatePreview(false)}
+        >
+          <SafeAreaView style={styles.certificateModalContainer}>
+            <View style={styles.certificateModalHeader}>
+              <Text style={styles.certificateModalTitle}>Certificate Preview</Text>
+              <TouchableOpacity onPress={() => setShowCertificatePreview(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.certificateModalContent}>
+              {/* Enhanced Certificate Preview */}
+              <View style={styles.certificatePreviewSection}>
+                <Text style={styles.certificatePreviewTitle}>Certificate Preview</Text>
+                
+                <View style={[
+                  styles.certificatePreviewCard,
+                  { borderColor: previewCertificate.certificateColor || "#1E40AF" }
+                ]}>
+                  {/* Decorative Border Elements */}
+                  <View style={styles.certificateBorderDecorations}>
+                    <View style={[styles.cornerDecoration, styles.topLeft]} />
+                    <View style={[styles.cornerDecoration, styles.topRight]} />
+                    <View style={[styles.cornerDecoration, styles.bottomLeft]} />
+                    <View style={[styles.cornerDecoration, styles.bottomRight]} />
+                  </View>
+
+                  {/* Certificate Header with Enhanced Design */}
+                  <View style={styles.certificatePreviewHeader}>
+                    <View style={[
+                      styles.certificatePreviewIcon,
+                      { backgroundColor: previewCertificate.certificateColor || "#1E40AF" }
+                    ]}>
+                      <Ionicons 
+                        name={previewCertificate.certificateIcon || "ribbon-outline"} 
+                        size={32} 
+                        color="#FFFFFF" 
+                      />
+                    </View>
+                    <View style={styles.certificatePreviewInfo}>
+                      <Text style={[
+                        styles.certificatePreviewCertificateTitle,
+                        { color: previewCertificate.certificateColor || "#1E40AF" }
+                      ]}>
+                        {previewCertificate.certificateTitle || "CERTIFICATE OF VOLUNTEER SERVICE"}
+                      </Text>
+                      <Text style={styles.certificatePreviewSubtitle}>
+                        {previewCertificate.certificateSubtitle || "This certifies outstanding volunteer contribution"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Decorative Line */}
+                  <View style={[styles.decorativeLine, { backgroundColor: previewCertificate.certificateColor || "#1E40AF" }]} />
+                  
+                  <View style={styles.certificatePreviewBody}>
+                    {/* Certificate Recipient */}
+                    <View style={styles.recipientSection}>
+                      <Text style={styles.certificatePreviewVolunteerName}>
+                        {previewCertificate.volunteerName}
+                      </Text>
+                      <View style={styles.nameUnderline} />
+                    </View>
+                    
+                    <Text style={styles.certificatePreviewText}>
+                      has successfully completed and demonstrated outstanding participation in
+                    </Text>
+                    
+                    <View style={styles.eventHighlight}>
+                      <Text style={styles.certificatePreviewEventName}>
+                        "{previewCertificate.eventTitle}"
+                      </Text>
+                    </View>
+
+                    {/* Event Details Section */}
+                    {(previewCertificate.eventDate || previewCertificate.eventTime || previewCertificate.eventLocation) && (
+                      <View style={styles.eventDetailsSection}>
+                        <Text style={styles.eventDetailsTitle}>Event Details</Text>
+                        <View style={styles.eventDetailsGrid}>
+                          {previewCertificate.eventDate && (
+                            <View style={styles.eventDetailItem}>
+                              <Ionicons name="calendar" size={16} color="#6B7280" />
+                              <Text style={styles.eventDetailText}>
+                                {(() => {
+                                  const formatDate = (dateString: any) => {
+                                    if (!dateString) return 'Date not specified';
+                                    
+                                    try {
+                                      let date: Date;
+                                      
+                                      if (dateString instanceof Date) {
+                                        date = dateString;
+                                      } else if (typeof dateString === 'string' && dateString.includes('/')) {
+                                        const [month, day, year] = dateString.split('/');
+                                        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                      } else if (typeof dateString === 'string' && dateString.includes('-')) {
+                                        date = new Date(dateString);
+                                      } else {
+                                        date = new Date(dateString);
+                                      }
+                                      
+                                      if (isNaN(date.getTime())) {
+                                        return 'Date not specified';
+                                      }
+                                      
+                                      return date.toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      });
+                                    } catch {
+                                      return 'Date not specified';
+                                    }
+                                  };
+                                  return formatDate(previewCertificate.eventDate);
+                                })()}
+                              </Text>
+                            </View>
+                          )}
+                          
+                          {previewCertificate.eventTime && previewCertificate.eventTime !== 'TBD' && (
+                            <View style={styles.eventDetailItem}>
+                              <Ionicons name="time" size={16} color="#6B7280" />
+                              <Text style={styles.eventDetailText}>{previewCertificate.eventTime}</Text>
+                            </View>
+                          )}
+                          
+                          {previewCertificate.eventLocation && previewCertificate.eventLocation !== 'TBD' && (
+                            <View style={styles.eventDetailItem}>
+                              <Ionicons name="location" size={16} color="#6B7280" />
+                              <Text style={styles.eventDetailText}>{previewCertificate.eventLocation}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                    
+                    <Text style={styles.certificatePreviewEventDetails}>
+                      {(() => {
+                        const formatDate = (dateString: any) => {
+                          if (!dateString) {
+                            return 'Date not specified';
+                          }
+
+                          // Handle different date formats
+                          let date: Date;
+                          
+                          try {
+                            // If it's already a Date object
+                            if (dateString instanceof Date) {
+                              date = dateString;
+                            }
+                            // If it's in MM/DD/YYYY format (from database)
+                            else if (typeof dateString === 'string' && dateString.includes('/')) {
+                              const [month, day, year] = dateString.split('/');
+                              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            }
+                            // If it's in YYYY-MM-DD format
+                            else if (typeof dateString === 'string' && dateString.includes('-')) {
+                              date = new Date(dateString);
+                            }
+                            // Default to Date constructor
+                            else {
+                              date = new Date(dateString);
+                            }
+                            
+                            if (isNaN(date.getTime())) {
+                              return 'Date not specified';
+                            }
+                            
+                            return date.toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            });
+                          } catch {
+                            return 'Date not specified';
+                          }
+                        };
+
+                        const dateText = formatDate(previewCertificate.eventDate);
+                        const startTime = previewCertificate.eventTime && previewCertificate.eventTime !== 'TBD' ? previewCertificate.eventTime : null;
+                        const locationText = previewCertificate.eventLocation && previewCertificate.eventLocation !== 'TBD' ? previewCertificate.eventLocation : null;
+
+                        let detailsText = `The event took place on ${dateText}`;
+                        if (startTime) {
+                          detailsText += ` at ${startTime}`;
+                        }
+                        if (locationText) {
+                          detailsText += ` in ${locationText}`;
+                        }
+                        detailsText += '.';
+
+                        return detailsText;
+                      })()}
+                    </Text>
+
+                    {previewCertificate.message && previewCertificate.message.trim() !== '' && (
+                      <View style={styles.certificatePreviewMessageSection}>
+                        <Text style={styles.certificatePreviewMessageLabel}>Special Recognition:</Text>
+                        <Text style={styles.certificatePreviewMessage}>
+                          "{previewCertificate.message}"
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {/* Certificate Footer with Enhanced Design */}
+                  <View style={styles.certificatePreviewFooter}>
+                    <View style={styles.footerDivider} />
+                    <View style={styles.organizationSection}>
+                      <Text style={styles.certificatePreviewOrganization}>
+                        {previewCertificate.organizationName}
+                      </Text>
+                      <Text style={styles.organizationLabel}>Organization</Text>
+                    </View>
+                    
+                    <View style={styles.dateSection}>
+                      <Text style={styles.certificatePreviewDate}>
+                        {new Date(previewCertificate.awardedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </Text>
+                      <Text style={styles.dateLabel}>Date Awarded</Text>
+                    </View>
+
+                    {/* Certificate ID */}
+                    {previewCertificate.uniqueIdentifier && (
+                      <View style={styles.certificateIdSection}>
+                        <Text style={styles.certificateIdLabel}>Certificate ID</Text>
+                        <Text style={styles.certificateId}>
+                          {previewCertificate.uniqueIdentifier}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.certificateModalActions}>
+              <TouchableOpacity
+                style={styles.certificateCancelModalButton}
+                onPress={() => setShowCertificatePreview(false)}
+              >
+                <Text style={styles.certificateCancelModalButtonText}>Close</Text>
+              </TouchableOpacity>
+
+            </View>
+          </SafeAreaView>
+        </Modal>
+      )}
+    </View>
+  );
 };
 
 // Helper functions for badge styling
@@ -106,10 +480,10 @@ export default function MyProfileScreen() {
   const [userInterests, setUserInterests] = useState<string[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
 
   // Achievements state
   const [achievements, setAchievements] = useState<any>(null);
-  const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
 
   // Achievement filter state
   const [achievementFilter, setAchievementFilter] = useState<'badges' | 'feedback' | 'progress'>('badges');
@@ -119,15 +493,8 @@ export default function MyProfileScreen() {
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [showAllAvailability, setShowAllAvailability] = useState(false);
 
-  // Password change modal state
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Password change functionality
+  const passwordChange = useChangePassword();
 
   // Delete account state
   const [isDeleting, setIsDeleting] = useState(false);
@@ -141,6 +508,22 @@ export default function MyProfileScreen() {
   const [volunteersHelped, setVolunteersHelped] = useState<number>(0);
   const [livesImpacted, setLivesImpacted] = useState<number>(0);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+
+  // Rating & Review state (for volunteers)
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [selectedEventToRate, setSelectedEventToRate] = useState<Event | null>(null);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+  const [eventReviews, setEventReviews] = useState<Record<string, { rating: number; hasReview: boolean }>>({});
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [attendanceStatus, setAttendanceStatus] = useState<Record<string, { status: string; canReview: boolean }>>({});
+
+  // Organization badges state
+  const [orgBadges, setOrgBadges] = useState<any[]>([]);
+  const [badgeSummary, setBadgeSummary] = useState<any[]>([]);
+  const [totalBadges, setTotalBadges] = useState(0);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [selectedEventReviews, setSelectedEventReviews] = useState<any[]>([]);
+  const [selectedEventForReviews, setSelectedEventForReviews] = useState<Event | null>(null);
 
   // Fetch user profile data on component mount
   useEffect(() => {
@@ -364,7 +747,6 @@ export default function MyProfileScreen() {
   // Get impact multiplier based on event cause and type
   const getImpactMultiplier = (cause: string, eventType: string) => {
     const causeLower = cause?.toLowerCase() || '';
-    const typeLower = eventType?.toLowerCase() || '';
     
     // High impact events (direct service to many people)
     if (causeLower.includes('food') || causeLower.includes('hunger') || causeLower.includes('meal')) {
@@ -555,6 +937,230 @@ export default function MyProfileScreen() {
     }
   };
 
+  // ==================== RATING & REVIEW FUNCTIONS ====================
+  
+  // Load reviews and attendance status for user's completed events
+  useEffect(() => {
+    if (completedEvents.length > 0 && token && user?.role === 'volunteer') {
+      loadMyReviews();
+      loadAttendanceStatus();
+    }
+  }, [completedEvents, token]);
+
+  // Load organization badges
+  useEffect(() => {
+    if (user?.role === 'organization' && user?.id) {
+      loadOrganizationBadges();
+    }
+  }, [user]);
+
+  const loadMyReviews = async () => {
+    if (!token) return;
+
+    const reviews: Record<string, { rating: number; hasReview: boolean }> = {};
+
+    for (const event of completedEvents) {
+      try {
+        const review = await reviewService.getMyReview(event.id, token);
+        if (review) {
+          reviews[event.id] = {
+            rating: review.rating,
+            hasReview: !!review.review
+          };
+        }
+      } catch (error) {
+        // Ignore errors for individual events
+      }
+    }
+
+    setEventReviews(reviews);
+  };
+
+  const loadAttendanceStatus = async () => {
+    if (!token || !user?.id) return;
+
+    try {
+      const attendanceData = await reviewService.getUserAttendanceStatus(user.id, token);
+      setAttendanceStatus(attendanceData);
+    } catch (error) {
+      console.error('Error loading attendance status:', error);
+    }
+  };
+
+  const loadOrganizationBadges = async () => {
+    if (!user?.id) return;
+
+    try {
+      const result = await reviewService.getOrganizationBadges(user.id);
+      setBadgeSummary(result.badgeSummary || []);
+      setOrgBadges(result.allBadges || []);
+      setTotalBadges(result.totalBadges || 0);
+    } catch (error) {
+      console.error('Error loading badges:', error);
+    }
+  };
+
+  const handleRateEvent = async (event: Event) => {
+    // Validate user is authenticated
+    if (!token) {
+      webAlert('Authentication Required', 'Please log in to rate events.');
+      return;
+    }
+
+    // Check attendance status
+    const attendance = attendanceStatus[event.id];
+    if (!attendance?.canReview) {
+      webAlert(
+        'Cannot Review',
+        'Your attendance must be marked as "attended" before you can leave a review.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setSelectedEventToRate(event);
+    
+    // Check if user has already reviewed this event
+    try {
+      const review = await reviewService.getMyReview(event.id, token);
+      setExistingReview(review);
+    } catch (error) {
+      console.error('Error fetching review:', error);
+      setExistingReview(null);
+    }
+    
+    setShowRateModal(true);
+  };
+
+  const handleSubmitReview = async (reviewData: { rating: number; review: string; badges: string[] }) => {
+    if (!selectedEventToRate || !token || !user?.id) return;
+
+    setIsSubmittingReview(true);
+
+    try {
+      // Try to submit review
+      await reviewService.submitReview(selectedEventToRate.id, reviewData, token);
+      
+      // Update local state
+      setEventReviews(prev => ({
+        ...prev,
+        [selectedEventToRate.id]: {
+          rating: reviewData.rating,
+          hasReview: !!reviewData.review
+        }
+      }));
+
+      setShowRateModal(false);
+      setSelectedEventToRate(null);
+      setExistingReview(null);
+
+      webAlert('Success', 'Thank you for your feedback! Your review has been submitted.');
+      
+      // Reload events and attendance status
+      loadCompletedEvents();
+      loadAttendanceStatus();
+    } catch (error: any) {
+      // If error is about not being registered, offer to auto-register (dev only)
+      if (error.message.includes('must register for this event')) {
+        // Try to auto-create EventParticipant for development
+        try {
+          const response = await fetch(
+            `${API.BASE_URL}/api/events/dev/mark-attended/${selectedEventToRate.id}/${user.id}`,
+            {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            }
+          );
+
+          if (response.ok) {
+            // Retry submitting the review
+            await reviewService.submitReview(selectedEventToRate.id, reviewData, token);
+            
+            setEventReviews(prev => ({
+              ...prev,
+              [selectedEventToRate.id]: {
+                rating: reviewData.rating,
+                hasReview: !!reviewData.review
+              }
+            }));
+
+            setShowRateModal(false);
+            setSelectedEventToRate(null);
+            setExistingReview(null);
+
+            webAlert('Success', 'Event registered and review submitted successfully!');
+            
+            loadCompletedEvents();
+            loadAttendanceStatus();
+            return;
+          }
+        } catch (autoFixError) {
+          console.error('Auto-fix failed:', autoFixError);
+        }
+      }
+
+      webAlert('Error', error.message || 'Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleViewReviews = async (event: Event) => {
+    setSelectedEventForReviews(event);
+    
+    try {
+      const result = await reviewService.getEventReviews(event.id);
+      
+      if (!result.reviews || result.reviews.length === 0) {
+        webAlert('No Reviews Yet', 'This event has not been reviewed by volunteers yet.');
+        return;
+      }
+      
+      setSelectedEventReviews(result.reviews || []);
+      setShowReviewsModal(true);
+    } catch (error) {
+      webAlert('Error', 'Failed to load reviews. Please try again.');
+    }
+  };
+
+  // Delete review with confirmation
+  const handleDeleteReview = async (eventId: string) => {
+    if (!token) return;
+
+    Alert.alert(
+      'Delete Review?',
+      'Are you sure you want to delete your review? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await reviewService.deleteReview(eventId, token);
+              
+              // Update local state
+              setEventReviews(prev => {
+                const updated = { ...prev };
+                delete updated[eventId];
+                return updated;
+              });
+
+              webAlert('Success', 'Your review has been deleted.');
+              loadCompletedEvents();
+              loadAttendanceStatus();
+            } catch (error: any) {
+              webAlert('Error', error.message || 'Failed to delete review.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   // ==================== AVATAR FUNCTIONS ====================
   const showImagePickerOptions = () => {
     const hasCustomAvatar = userProfile?.avatar && userProfile.avatar !== '/uploads/avatars/default-avatar.png';
@@ -584,7 +1190,7 @@ export default function MyProfileScreen() {
       style: 'cancel',
     });
 
-    Alert.alert(
+    webAlert(
       'Select Avatar',
       'Choose how you want to set your profile picture',
       options
@@ -596,12 +1202,12 @@ export default function MyProfileScreen() {
       // Request camera permissions
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Camera permission is required to take photos.');
+        webAlert('Permission Required', 'Camera permission is required to take photos.');
         return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -612,7 +1218,7 @@ export default function MyProfileScreen() {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      webAlert('Error', 'Failed to take photo. Please try again.');
     }
   };
 
@@ -621,12 +1227,12 @@ export default function MyProfileScreen() {
       // Request media library permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Media library permission is required to select photos.');
+        webAlert('Permission Required', 'Media library permission is required to select photos.');
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -637,13 +1243,13 @@ export default function MyProfileScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to select image. Please try again.');
+      webAlert('Error', 'Failed to select image. Please try again.');
     }
   };
 
   const uploadAvatarImage = async (imageUri: string) => {
     if (!token) {
-      Alert.alert('Error', 'Authentication required. Please log in again.');
+      webAlert('Error', 'Authentication required. Please log in again.');
       return;
     }
 
@@ -657,10 +1263,10 @@ export default function MyProfileScreen() {
         avatar: response.avatar
       }));
 
-      Alert.alert('Success', 'Avatar updated successfully!');
+      webAlert('Success', 'Avatar updated successfully!');
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      Alert.alert('Error', 'Failed to upload avatar. Please try again.');
+      webAlert('Error', 'Failed to upload avatar. Please try again.');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -668,12 +1274,12 @@ export default function MyProfileScreen() {
 
   const deleteAvatarImage = async () => {
     if (!token) {
-      Alert.alert('Error', 'Authentication required. Please log in again.');
+      webAlert('Error', 'Authentication required. Please log in again.');
       return;
     }
 
     // Show confirmation dialog
-    Alert.alert(
+    webAlert(
       'Delete Avatar',
       'Are you sure you want to delete your profile picture? It will be reset to the default avatar.',
       [
@@ -695,10 +1301,10 @@ export default function MyProfileScreen() {
                 avatar: response.avatar
               }));
 
-              Alert.alert('Success', 'Avatar deleted successfully!');
+              webAlert('Success', 'Avatar deleted successfully!');
             } catch (error) {
               console.error('Error deleting avatar:', error);
-              Alert.alert('Error', 'Failed to delete avatar. Please try again.');
+              webAlert('Error', 'Failed to delete avatar. Please try again.');
             } finally {
               setIsUploadingAvatar(false);
             }
@@ -712,7 +1318,7 @@ export default function MyProfileScreen() {
 
   // ==================== ACCOUNT MANAGEMENT ====================
   const handleDeleteAccount = () => {
-    Alert.alert(
+    webAlert(
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
       [
@@ -730,7 +1336,7 @@ export default function MyProfileScreen() {
   };
 
   const confirmDeleteAccount = () => {
-    Alert.alert(
+    webAlert(
       'Final Confirmation',
       'This is your last chance to cancel. Your account and all associated data will be permanently deleted.',
       [
@@ -749,7 +1355,7 @@ export default function MyProfileScreen() {
 
   const deleteAccount = async () => {
     if (!token) {
-      Alert.alert('Error', 'Authentication token not found');
+      webAlert('Error', 'Authentication token not found');
       return;
     }
 
@@ -767,7 +1373,7 @@ export default function MyProfileScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert(
+        webAlert(
           'Account Deleted',
           'Your account has been successfully deleted.',
           [
@@ -781,11 +1387,11 @@ export default function MyProfileScreen() {
           ]
         );
       } else {
-        Alert.alert('Error', data.message || 'Failed to delete account');
+        webAlert('Error', data.message || 'Failed to delete account');
       }
     } catch (error) {
       console.error('Delete account error:', error);
-      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+      webAlert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -793,103 +1399,9 @@ export default function MyProfileScreen() {
 
   // ==================== PASSWORD CHANGE FUNCTIONS ====================
   const handleChangePassword = () => {
-    setShowChangePasswordModal(true);
+    passwordChange.openModal();
   };
 
-  const closeChangePasswordModal = () => {
-    setShowChangePasswordModal(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
-    setShowConfirmPassword(false);
-  };
-
-  const validatePasswordForm = () => {
-    if (!currentPassword.trim()) {
-      Alert.alert('Error', 'Please enter your current password');
-      return false;
-    }
-    
-    if (!newPassword.trim()) {
-      Alert.alert('Error', 'Please enter a new password');
-      return false;
-    }
-    
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'New password must be at least 6 characters long');
-      return false;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New password and confirm password do not match');
-      return false;
-    }
-    
-    if (currentPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from current password');
-      return false;
-    }
-    
-    return true;
-  };
-
-  const changePassword = async () => {
-    if (!validatePasswordForm()) {
-      return;
-    }
-
-    if (!token) {
-      Alert.alert('Error', 'Authentication token not found');
-      return;
-    }
-
-    setIsChangingPassword(true);
-    
-    try {
-      const passwordData = {
-        currentPassword,
-        newPassword,
-      };
-      
-      
-      const response = await fetch(API.changePassword, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(passwordData),
-      });
-
-      console.log('Password change response status:', response.status);
-      const data = await response.json();
-      console.log('Password change response data:', data);
-
-      if (response.ok) {
-        Alert.alert(
-          'Success',
-          'Your password has been successfully changed.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                closeChangePasswordModal();
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Error', data.message || 'Failed to change password');
-      }
-    } catch (error) {
-      console.error('Change password error:', error);
-      Alert.alert('Error', 'Network error. Please check your connection and try again.');
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1107,6 +1619,11 @@ export default function MyProfileScreen() {
         </View>
 
 
+        {/* Enhanced Certificates Section */}
+        {user?.role === 'volunteer' && (
+          <EnhancedCertificatesSection userId={user.id} token={token || ''} />
+        )}
+
         {/* Achievements Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Achievements</Text>
@@ -1139,53 +1656,16 @@ export default function MyProfileScreen() {
             </TouchableOpacity>
           </View>
           
-          {/* Database Badges */}
+          {/* Organization Badges */}
           {achievementFilter === 'badges' && (
-            achievements?.badges && achievements.badges.length > 0 ? (
-              <View style={styles.achievementSection}>
-                <Text style={styles.achievementSubtitle}>Badges from Organizations</Text>
-                <View style={styles.badgesGrid}>
-                  {achievements.badges.map((badge: any, index: number) => (
-                    <View key={index} style={styles.organizationBadgeCard}>
-                      <View style={styles.organizationBadgeHeader}>
-                        <View style={[styles.organizationBadgeIcon, { backgroundColor: getBadgeColor(badge.badgeType) + '20' }]}>
-                          <Ionicons name={getBadgeIcon(badge.badgeType)} size={28} color={getBadgeColor(badge.badgeType)} />
-                        </View>
-                        <View style={styles.organizationBadgeStatus}>
-                          <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-                        </View>
-                      </View>
-                      <View style={styles.organizationBadgeContent}>
-                        <Text style={styles.organizationBadgeName}>{badge.badgeName}</Text>
-                        <Text style={styles.organizationBadgeType}>{badge.badgeType.charAt(0).toUpperCase() + badge.badgeType.slice(1)} Badge</Text>
-                        {badge.description && (
-                          <Text style={styles.organizationBadgeDescription}>{badge.description}</Text>
-                        )}
-                      </View>
-                      <View style={styles.organizationBadgeFooter}>
-                        <View style={styles.organizationBadgeDateContainer}>
-                          <Ionicons name="calendar" size={14} color="#6B7280" />
-                          <Text style={styles.organizationBadgeDate}>
-                            Awarded {new Date(badge.awardedAt).toLocaleDateString()}
-                          </Text>
-                        </View>
-                        {badge.awardedBy && (
-                          <View style={styles.organizationBadgeAwarderContainer}>
-                            <Ionicons name="person" size={14} color="#6B7280" />
-                            <Text style={styles.organizationBadgeAwarder}>
-                              by {badge.awardedBy}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
+            user?.role === 'organization' ? (
+              <OrganizationBadgesSection
+                badges={orgBadges}
+                badgeSummary={badgeSummary}
+                totalBadges={totalBadges}
+              />
             ) : (
-              achievementFilter === 'badges' && (
-                <Text style={styles.emptyStateText}>No badges from organizations yet</Text>
-              )
+              <EnhancedOrganizationBadges badges={achievements?.badges || []} />
             )
           )}
 
@@ -1207,11 +1687,11 @@ export default function MyProfileScreen() {
                               color="#F59E0B"
                             />
                           ))}
-                        </View>
+                  </View>
                         <Text style={styles.feedbackDate}>
                           {new Date(feedback.givenAt).toLocaleDateString()}
-                        </Text>
-                      </View>
+                  </Text>
+                </View>
                       {feedback.feedback && (
                         <Text style={styles.feedbackText}>{feedback.feedback}</Text>
                       )}
@@ -1222,7 +1702,7 @@ export default function MyProfileScreen() {
                             {feedback.skills.map((skill: string, skillIndex: number) => (
                               <View key={skillIndex} style={styles.skillTag}>
                                 <Text style={styles.skillText}>{skill}</Text>
-                              </View>
+          </View>
                             ))}
                           </View>
                         </View>
@@ -1238,101 +1718,14 @@ export default function MyProfileScreen() {
             )
           )}
 
-          {/* Hardcoded Progress Badges */}
+          {/* Enhanced Progress Badges */}
           {achievementFilter === 'progress' && (
-            <View style={styles.achievementSection}>
-              <Text style={styles.achievementSubtitle}>Progress Badges</Text>
-          <View style={styles.badgesGrid}>
-            {(() => {
-              // Calculate badge achievements based on USER-SPECIFIC data
-              const hasFirstTimer = completedEvents.length >= 1;
-              const hasHelpingHand = totalHours >= 10;
-              const hasCommunityHero = organizationsHelped >= 5;
-              const hasLongTermVolunteer = completedEvents.length >= 10;
-              const hasEmergencyReady = completedEvents.some(event => 
-                event.cause?.toLowerCase().includes('emergency') || 
-                event.cause?.toLowerCase().includes('disaster') ||
-                event.cause?.toLowerCase().includes('relief')
-              );
-              const hasTeamPlayer = completedEvents.length >= 5;
-
-              const dynamicBadges = [
-                {
-                  id: 1,
-                  name: user?.role === 'organization' ? 'Event Creator' : 'First Timer',
-                  icon: 'sparkles',
-                  color: hasFirstTimer ? '#F59E0B' : '#9CA3AF',
-                  earned: hasFirstTimer,
-                  description: hasFirstTimer 
-                    ? (user?.role === 'organization' ? 'Created your first event' : 'Completed your first volunteer event')
-                    : (user?.role === 'organization' ? 'Create your first event' : 'Complete your first event')
-                },
-                {
-                  id: 2,
-                  name: user?.role === 'organization' ? 'Time Manager' : 'Helping Hand',
-                  icon: 'heart',
-                  color: hasHelpingHand ? '#F59E0B' : '#9CA3AF',
-                  earned: hasHelpingHand,
-                  description: hasHelpingHand 
-                    ? (user?.role === 'organization' ? `Organized ${totalHours}+ hours of events` : `Volunteered for ${totalHours}+ hours`)
-                    : (user?.role === 'organization' ? 'Organize 10+ hours of events' : 'Volunteer for 10+ hours')
-                },
-                {
-                  id: 3,
-                  name: user?.role === 'organization' ? 'Volunteer Magnet' : 'Community Hero',
-                  icon: 'people',
-                  color: hasCommunityHero ? '#3B82F6' : '#9CA3AF',
-                  earned: hasCommunityHero,
-                  description: hasCommunityHero 
-                    ? (user?.role === 'organization' ? `Attracted ${organizationsHelped}+ volunteers` : `Supported ${organizationsHelped}+ organizations`)
-                    : (user?.role === 'organization' ? 'Attract 5+ volunteers' : 'Support 5+ organizations')
-                },
-                {
-                  id: 4,
-                  name: user?.role === 'organization' ? 'Event Master' : 'Long-term Volunteer',
-                  icon: 'time',
-                  color: hasLongTermVolunteer ? '#10B981' : '#9CA3AF',
-                  earned: hasLongTermVolunteer,
-                  description: hasLongTermVolunteer 
-                    ? (user?.role === 'organization' ? `Created ${completedEvents.length}+ events` : `Completed ${completedEvents.length}+ events`)
-                    : (user?.role === 'organization' ? 'Create 10+ events' : 'Complete 10+ events')
-                },
-                {
-                  id: 5,
-                  name: user?.role === 'organization' ? 'Crisis Coordinator' : 'Emergency Ready',
-                  icon: 'warning',
-                  color: hasEmergencyReady ? '#EF4444' : '#9CA3AF',
-                  earned: hasEmergencyReady,
-                  description: hasEmergencyReady 
-                    ? (user?.role === 'organization' ? 'Organized emergency/disaster relief events' : 'Helped in emergency/disaster relief')
-                    : (user?.role === 'organization' ? 'Organize emergency events' : 'Help in emergency events')
-                },
-                {
-                  id: 6,
-                  name: user?.role === 'organization' ? 'Community Builder' : 'Team Player',
-                  icon: 'person-add',
-                  color: hasTeamPlayer ? '#06B6D4' : '#9CA3AF',
-                  earned: hasTeamPlayer,
-                  description: hasTeamPlayer 
-                    ? (user?.role === 'organization' ? `Created ${completedEvents.length}+ community events` : `Completed ${completedEvents.length}+ events`)
-                    : (user?.role === 'organization' ? 'Create 5+ events' : 'Complete 5+ events')
-                }
-              ];
-
-              return dynamicBadges.map((badge) => (
-                <View key={badge.id} style={[styles.badgeCard, !badge.earned && styles.badgeCardLocked]}>
-                  <View style={[styles.badgeIcon, { backgroundColor: badge.color + '20' }]}>
-                    <Ionicons name={badge.icon as any} size={24} color={badge.color} />
-                  </View>
-                  <Text style={[styles.badgeName, !badge.earned && styles.badgeNameLocked]}>{badge.name}</Text>
-                  <Text style={[styles.badgeDescription, !badge.earned && styles.badgeDescriptionLocked]}>
-                    {badge.description}
-                  </Text>
-                </View>
-              ));
-            })()}
-          </View>
-            </View>
+            <EnhancedBadgesSection
+              completedEvents={completedEvents}
+              totalHours={totalHours}
+              organizationsHelped={organizationsHelped}
+              userRole={user?.role}
+            />
           )}
         </View>
 
@@ -1402,40 +1795,16 @@ export default function MyProfileScreen() {
           </View>
         </View>
 
-        {/* Activity History */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Activity History</Text>
-          <View style={styles.activityList}>
-            {isLoadingEvents ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading events...</Text>
-              </View>
-            ) : completedEvents.length > 0 ? (
-              completedEvents.map((event, index) => (
-                <ActivityItem
-                  key={event.id || index}
-                  icon={getEventIcon(event.cause)}
-                  title={event.title}
-                  organization={event.organizationName || event.org}
-                  date={formatDateForDisplay(event.date)}
-                  time={`${event.time} - ${event.endTime}`}
-                  status="completed"
-                />
-              ))
-            ) : (
-              <View style={styles.noEventsContainer}>
-                <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
-                <Text style={styles.noEventsTitle}>No Completed Events</Text>
-                <Text style={styles.noEventsSubtext}>
-                  {user?.role === 'organization' 
-                    ? 'You haven\'t completed any events yet' 
-                    : 'You haven\'t attended any events yet'
-                  }
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
+        {/* Enhanced Activity History */}
+        <EnhancedActivityHistory 
+          events={completedEvents} 
+          isLoading={isLoadingEvents} 
+          userRole={user?.role}
+          onRateEvent={user?.role === 'volunteer' ? handleRateEvent : undefined}
+          onViewReviews={user?.role === 'organization' ? handleViewReviews : undefined}
+          eventReviews={eventReviews}
+          attendanceStatus={attendanceStatus}
+        />
 
         {/* Settings & Preferences */}
         <View style={styles.section}>
@@ -1458,6 +1827,7 @@ export default function MyProfileScreen() {
         </View>
 
 
+
         {/* Delete Account Button */}
         <TouchableOpacity 
           style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]} 
@@ -1473,14 +1843,14 @@ export default function MyProfileScreen() {
 
       {/* Change Password Modal */}
       <Modal
-        visible={showChangePasswordModal}
+        visible={passwordChange.showModal}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={closeChangePasswordModal}
+        onRequestClose={passwordChange.closeModal}
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={closeChangePasswordModal}>
+            <TouchableOpacity onPress={passwordChange.closeModal}>
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Change Password</Text>
@@ -1493,17 +1863,17 @@ export default function MyProfileScreen() {
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.formInput}
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
+                  value={passwordChange.currentPassword}
+                  onChangeText={passwordChange.setCurrentPassword}
                   placeholder="Enter your current password"
-                  secureTextEntry={!showCurrentPassword}
+                  secureTextEntry={!passwordChange.showCurrentPassword}
                   autoCapitalize="none"
                 />
                 <TouchableOpacity 
                   style={styles.eyeIcon} 
-                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                  onPress={passwordChange.toggleCurrentPasswordVisibility}
                 >
-                  <Ionicons name={showCurrentPassword ? 'eye-off' : 'eye'} size={18} color="#6B7280" />
+                  <Ionicons name={passwordChange.showCurrentPassword ? 'eye-off' : 'eye'} size={18} color="#6B7280" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1513,17 +1883,17 @@ export default function MyProfileScreen() {
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.formInput}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
+                  value={passwordChange.newPassword}
+                  onChangeText={passwordChange.setNewPassword}
                   placeholder="Enter your new password"
-                  secureTextEntry={!showNewPassword}
+                  secureTextEntry={!passwordChange.showNewPassword}
                   autoCapitalize="none"
                 />
                 <TouchableOpacity 
                   style={styles.eyeIcon} 
-                  onPress={() => setShowNewPassword(!showNewPassword)}
+                  onPress={passwordChange.toggleNewPasswordVisibility}
                 >
-                  <Ionicons name={showNewPassword ? 'eye-off' : 'eye'} size={18} color="#6B7280" />
+                  <Ionicons name={passwordChange.showNewPassword ? 'eye-off' : 'eye'} size={18} color="#6B7280" />
                 </TouchableOpacity>
               </View>
               <Text style={styles.formHint}>Password must be at least 6 characters long</Text>
@@ -1534,17 +1904,17 @@ export default function MyProfileScreen() {
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.formInput}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  value={passwordChange.confirmPassword}
+                  onChangeText={passwordChange.setConfirmPassword}
                   placeholder="Confirm your new password"
-                  secureTextEntry={!showConfirmPassword}
+                  secureTextEntry={!passwordChange.showConfirmPassword}
                   autoCapitalize="none"
                 />
                 <TouchableOpacity 
                   style={styles.eyeIcon} 
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onPress={passwordChange.toggleConfirmPasswordVisibility}
                 >
-                  <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={18} color="#6B7280" />
+                  <Ionicons name={passwordChange.showConfirmPassword ? 'eye-off' : 'eye'} size={18} color="#6B7280" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1552,19 +1922,19 @@ export default function MyProfileScreen() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={closeChangePasswordModal}
-                disabled={isChangingPassword}
+                onPress={passwordChange.closeModal}
+                disabled={passwordChange.isChanging}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.saveButton, isChangingPassword && styles.saveButtonDisabled]}
-                onPress={changePassword}
-                disabled={isChangingPassword}
+                style={[styles.saveButton, passwordChange.isChanging && styles.saveButtonDisabled]}
+                onPress={() => passwordChange.changePassword(token || '')}
+                disabled={passwordChange.isChanging}
               >
                 <Text style={styles.saveButtonText}>
-                  {isChangingPassword ? 'Changing...' : 'Change Password'}
+                  {passwordChange.isChanging ? 'Changing...' : 'Change Password'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1586,6 +1956,64 @@ export default function MyProfileScreen() {
         toggleArrayItem={toggleArrayItem}
         hasChanges={hasChanges}
       />
+
+      {/* Rate & Review Modal - For Volunteers */}
+      {showRateModal && selectedEventToRate && (
+        <RateReviewModal
+          visible={showRateModal}
+          onClose={() => {
+            setShowRateModal(false);
+            setSelectedEventToRate(null);
+            setExistingReview(null);
+          }}
+          onSubmit={handleSubmitReview}
+          eventTitle={selectedEventToRate.title}
+          organizationName={selectedEventToRate.organizationName}
+          existingReview={existingReview || undefined}
+          isSubmitting={isSubmittingReview}
+        />
+      )}
+
+      {/* Reviews Modal - For Organizations */}
+      {showReviewsModal && (
+        <Modal
+          visible={showReviewsModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <SafeAreaView style={styles.reviewsModalContainer}>
+            <View style={styles.reviewsModalHeader}>
+              <TouchableOpacity onPress={() => setShowReviewsModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={styles.reviewsModalTitle}>Event Reviews</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {selectedEventForReviews && (
+              <View style={styles.eventInfoHeader}>
+                <Text style={styles.reviewEventTitle}>{selectedEventForReviews.title}</Text>
+                {(selectedEventForReviews as any).ratings?.average > 0 && (
+                  <View style={styles.ratingRow}>
+                    <Ionicons name="star" size={18} color="#F59E0B" />
+                    <Text style={styles.avgRating}>
+                      {(selectedEventForReviews as any).ratings.average.toFixed(1)}
+                    </Text>
+                    <Text style={styles.reviewCountText}>
+                      ({(selectedEventForReviews as any).reviewCount} reviews)
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <ReviewsList
+              reviews={selectedEventReviews}
+              showVolunteerName={true}
+            />
+          </SafeAreaView>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -1905,9 +2333,6 @@ const styles = StyleSheet.create({
   },
 
   // Achievement Section Styles
-  achievementSection: {
-    marginBottom: 24,
-  },
   achievementSubtitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -2292,25 +2717,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
   formSection: {
     marginBottom: 24,
   },
@@ -2435,5 +2841,853 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  
+  // Certificate styles
+  certificatesSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  certificatesSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  certificatesLoadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  certificatesLoadingText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  certificatesEmptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  certificatesEmptyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  certificatesEmptySubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  certificatesListContainer: {
+    gap: 12,
+  },
+  certificateCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  certificateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  certificateIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  certificateInfo: {
+    flex: 1,
+  },
+  certificateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  certificateEvent: {
+    fontSize: 14,
+    color: '#475569',
+    marginBottom: 2,
+  },
+  certificateDate: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  certificateActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  certificateActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    gap: 4,
+  },
+  certificateActionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  
+  // Certificate Modal styles
+  certificateModalContainer: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  certificateModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  certificateModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  certificateModalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  certificateModalActions: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  certificateCancelModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  certificateCancelModalButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  certificateDownloadModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#10B981',
+    borderRadius: 8,
+    gap: 6,
+  },
+  certificateDownloadModalButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  
+  // Certificate preview styles (reused from certificates.tsx)
+  previewCertificateContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  previewCertificateBorder: {
+    borderWidth: 4,
+    borderColor: '#1E40AF',
+    borderRadius: 12,
+    padding: 8,
+    backgroundColor: '#FEFEFE',
+  },
+  previewCertificateInnerBorder: {
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 24,
+    backgroundColor: '#FFFFFF',
+  },
+  previewLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  previewLogoText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    marginLeft: 8,
+  },
+  previewHeaderDivider: {
+    height: 3,
+    width: '60%',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  previewCertificateMainTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  previewCertificateSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#6B7280',
+    marginBottom: 24,
+  },
+  previewCertificateBody: {
+    marginBottom: 24,
+  },
+  previewVolunteerNameText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  previewAchievementSection: {
+    marginBottom: 20,
+  },
+  previewAchievementText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#374151',
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  previewEventNameText: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  previewEventDetailsContainer: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 8,
+    fontStyle: 'italic',
+  },
+  previewMessageSection: {
+    backgroundColor: '#FEF3C7',
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  previewMessageLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  previewCertificateMessage: {
+    fontSize: 14,
+    color: '#92400E',
+    fontStyle: 'italic',
+  },
+  previewCertificateFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    borderTopWidth: 2,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 20,
+    marginBottom: 16,
+  },
+  previewSignatureSection: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  previewSignatureLine: {
+    width: 120,
+    height: 1,
+    backgroundColor: '#6B7280',
+    marginBottom: 8,
+  },
+  previewSignatureLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  previewOrganizationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  previewDateSection: {
+    alignItems: 'flex-end',
+  },
+  previewAwardedDateText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  previewCertificateId: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontFamily: 'monospace',
+  },
+  previewCertificateFooterText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+
+  // Professional E-Certificate Styles (same as certificates.tsx)
+  eCertificateContainer: {
+    padding: 16,
+    backgroundColor: '#F8FAFC',
+  },
+  certificateBorder: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 4,
+    borderColor: '#1E40AF',
+    borderRadius: 16,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  certificateInnerBorder: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 32,
+    minHeight: 500,
+  },
+  previewCertificateHeader: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E40AF',
+    marginLeft: 8,
+  },
+  headerDivider: {
+    width: 200,
+    height: 2,
+    backgroundColor: '#1E40AF',
+    marginBottom: 16,
+  },
+  certificateMainTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E40AF',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  certificateSubtitle: {
+    fontSize: 18,
+    color: '#374151',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  certificateBody: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  volunteerNameText: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#1E40AF',
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: 1,
+    textDecorationLine: 'underline',
+    textDecorationColor: '#1E40AF',
+  },
+  achievementSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  achievementText: {
+    fontSize: 16,
+    color: '#374151',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  eventNameText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E40AF',
+    marginBottom: 8,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  eventDetailsContainer: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
+  eventDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  eventDescriptionText: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 12,
+    lineHeight: 20,
+    paddingHorizontal: 20,
+  },
+  messageSection: {
+    backgroundColor: '#F0F9FF',
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#1E40AF',
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  messageLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E40AF',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  certificateMessage: {
+    fontSize: 14,
+    color: '#374151',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  certificateFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    borderTopWidth: 2,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 24,
+    marginBottom: 16,
+  },
+  certificateFooterText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  signatureSection: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  signatureLine: {
+    width: 120,
+    height: 1,
+    backgroundColor: '#374151',
+    marginBottom: 8,
+  },
+  signatureLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  organizationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  awardedDateText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+
+  // Modal styles
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+
+  // Certificate Preview Styles (same as organization's award certificates)
+  certificatePreviewSection: {
+    marginBottom: 24,
+  },
+  certificatePreviewTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  certificatePreviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 3,
+    borderColor: '#1E40AF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  certificatePreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  certificatePreviewIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#1E40AF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  certificatePreviewInfo: {
+    flex: 1,
+  },
+  certificatePreviewCertificateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E40AF',
+    marginBottom: 4,
+  },
+  certificatePreviewSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  certificatePreviewBody: {
+    marginBottom: 20,
+  },
+  certificatePreviewVolunteerName: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  certificatePreviewText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  certificatePreviewEventName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E40AF',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  certificatePreviewEventDetails: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  certificatePreviewMessageSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+  },
+  certificatePreviewMessageLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  certificatePreviewMessage: {
+    fontSize: 14,
+    color: '#374151',
+    fontStyle: 'italic',
+  },
+  certificatePreviewFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 16,
+    alignItems: 'center',
+  },
+  certificatePreviewOrganization: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  certificatePreviewDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  // Enhanced Certificate Styles
+  certificateBorderDecorations: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  cornerDecoration: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  topLeft: {
+    top: 16,
+    left: 16,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 8,
+  },
+  topRight: {
+    top: 16,
+    right: 16,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 8,
+  },
+  bottomLeft: {
+    bottom: 16,
+    left: 16,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+  },
+  bottomRight: {
+    bottom: 16,
+    right: 16,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderBottomRightRadius: 8,
+  },
+  decorativeLine: {
+    height: 2,
+    width: '100%',
+    marginVertical: 20,
+    borderRadius: 1,
+  },
+  recipientSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  nameUnderline: {
+    width: 120,
+    height: 2,
+    backgroundColor: '#D1D5DB',
+    marginTop: 8,
+    borderRadius: 1,
+  },
+  eventHighlight: {
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  footerDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginBottom: 20,
+  },
+  organizationSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  organizationLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dateSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dateLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  certificateIdSection: {
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  certificateIdLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  certificateId: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '600',
+    fontFamily: 'monospace',
+  },
+  eventDetailsSection: {
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  eventDetailsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  eventDetailsGrid: {
+    gap: 8,
+  },
+  eventDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  eventDetailText: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '500',
+    flex: 1,
+  },
+  // Reviews Modal Styles
+  reviewsModalContainer: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  reviewsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  reviewsModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  eventInfoHeader: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  reviewEventTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  avgRating: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#F59E0B',
+  },
+  reviewCountText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 });

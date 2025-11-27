@@ -1,10 +1,12 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../constants/Api';
 import { useAuth } from '../../contexts/AuthContext';
+import { apiService, NetworkError, ValidationError } from '../../services/apiService';
+import { webAlert } from '../../utils/webAlert';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,33 +31,29 @@ export default function LoginScreen() {
   const { login, isLoading } = useAuth();
 
   const onLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing info', 'Please enter email and password');
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      webAlert('Missing info', 'Please enter email and password', undefined, 'warning');
       return;
     }
     
     try {
       setSubmitting(true);
       
-      const loginData = { email, password };
-      
-      const res = await fetch(API.login, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data?.message || 'Login failed');
+      // Prefer centralized API client for consistent error handling
+      const response = await apiService.login({ email: trimmedEmail, password: trimmedPassword });
+
+      if (!response?.success || !response?.data) {
+        throw new Error(response?.message || 'Login failed');
       }
-      
+
       // Use the auth context to login with remember me
-      await login(data, rememberMe);
+      await login(response.data as any, rememberMe);
       
       // Show success alert
-      Alert.alert(
+      webAlert(
         '🎉 Welcome Back!',
         'You have successfully logged in to VolunTech.',
         [
@@ -63,11 +61,19 @@ export default function LoginScreen() {
             text: 'Continue',
             style: 'default'
           }
-        ]
+        ],
+        'success'
       );
     } catch (e: any) {
       console.error('Login error:', e);
-      Alert.alert('Login failed', e?.message || 'Please try again');
+      if (e instanceof ValidationError) {
+        const detailMsg = e.details?.map((d: any) => d.message).join('\n');
+        webAlert('Login failed', detailMsg || e.message, undefined, 'error');
+      } else if (e instanceof NetworkError) {
+        webAlert('Login failed', e.message, undefined, 'error');
+      } else {
+        webAlert('Login failed', e?.message || 'Please try again', undefined, 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +98,7 @@ export default function LoginScreen() {
 
   const sendResetCode = async () => {
     if (!forgotEmail) {
-      Alert.alert('Error', 'Please enter your email address');
+      webAlert('Error', 'Please enter your email address', undefined, 'warning');
       return;
     }
 
@@ -119,7 +125,7 @@ export default function LoginScreen() {
       }
 
       console.log('Reset code sent successfully');
-      Alert.alert('Success', 'If the email exists, a reset code has been sent');
+      webAlert('Success', 'If the email exists, a reset code has been sent', undefined, 'success');
       
       setCountdown(600); // 10 minutes
       const timer = setInterval(() => {
@@ -132,7 +138,7 @@ export default function LoginScreen() {
         });
       }, 1000);
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to send reset code');
+      webAlert('Error', e?.message || 'Failed to send reset code');
     } finally {
       setSendingCode(false);
     }
@@ -140,7 +146,7 @@ export default function LoginScreen() {
 
   const verifyResetCode = async () => {
     if (!resetCode || resetCode.length !== 6) {
-      Alert.alert('Error', 'Please enter a valid 6-digit code');
+      webAlert('Error', 'Please enter a valid 6-digit code');
       return;
     }
 
@@ -167,10 +173,10 @@ export default function LoginScreen() {
       }
 
       setCodeVerified(true);
-      Alert.alert('Success', 'Code verified! Please enter your new password');
+        webAlert('Success', 'Code verified! Please enter your new password');
     } catch (e: any) {
       console.log('Reset code verification error:', e?.message);
-      Alert.alert('Verification Failed', e?.message || 'Invalid reset code');
+      webAlert('Verification Failed', e?.message || 'Invalid reset code');
     } finally {
       setVerifyingCode(false);
     }
@@ -178,17 +184,17 @@ export default function LoginScreen() {
 
   const resetPassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please enter and confirm your new password');
+      webAlert('Error', 'Please enter and confirm your new password');
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+      webAlert('Error', 'Password must be at least 6 characters long');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      webAlert('Error', 'Passwords do not match');
       return;
     }
 
@@ -218,7 +224,7 @@ export default function LoginScreen() {
         throw new Error(data?.message || 'Failed to reset password');
       }
 
-      Alert.alert(
+      webAlert(
         'Success', 
         'Password reset successfully! You can now log in with your new password.',
         [
@@ -232,7 +238,7 @@ export default function LoginScreen() {
       );
     } catch (e: any) {
       console.log('Password reset error:', e?.message);
-      Alert.alert('Password Reset Failed', e?.message || 'Failed to reset password');
+      webAlert('Password Reset Failed', e?.message || 'Failed to reset password');
     } finally {
       setResettingPassword(false);
     }
@@ -243,7 +249,7 @@ export default function LoginScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
-          <Image source={require('../../assets/images/icon.png')} style={styles.logo} />
+          <Image source={require('../../assets/images/voluntech-logo.png')} style={styles.logo} />
           <Text style={styles.brand}>VolunTech</Text>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
@@ -262,11 +268,11 @@ export default function LoginScreen() {
           {/* Logo and Brand */}
           <View style={styles.header}>
             <Image
-              source={require('../../assets/images/react-logo.png')}
+              source={require('../../assets/images/voluntech-logo.png')}
               style={styles.logo}
               resizeMode="contain"
               accessible
-              accessibilityLabel="App logo"
+              accessibilityLabel="VOLUNTECH logo"
             />
             <Text style={styles.brand}>VOLUNTECH</Text>
           </View>
@@ -534,8 +540,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 100,
+    height: 100,
     marginBottom: 8,
   },
   brand: {

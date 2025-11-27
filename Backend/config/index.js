@@ -66,7 +66,13 @@ const config = {
   
   // CORS Configuration
   cors: {
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:8081'],
+    origin: process.env.CORS_ORIGIN ? 
+      process.env.CORS_ORIGIN.split(',') : 
+      (process.env.NODE_ENV === 'development' ? 
+        // In development, allow all origins for easier testing
+        true :
+        ['http://localhost:3000', 'http://localhost:8081']
+      ),
     credentials: true
   },
   

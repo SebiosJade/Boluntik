@@ -1,9 +1,9 @@
+import ProfileIcon from '@/components/ProfileIcon';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ProfileDropdown from '@/components/ProfileDropdown';
 
 const { width } = Dimensions.get('window');
 
@@ -85,41 +85,29 @@ export default function PremiumSubscriptionManagement() {
   };
 
   const menuItems = [
-    { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline' },
-    { id: 'fees', title: 'Fees', icon: 'card-outline' },
-    { id: 'ads', title: 'Ads', icon: 'checkmark-circle-outline' },
-    { id: 'subscriptions', title: 'Subscriptions', icon: 'card-outline' },
+    { id: 'home', title: 'Dashboard', icon: 'home-outline' },
     { id: 'users', title: 'Users', icon: 'people-outline' },
-    { id: 'analytics', title: 'Analytics', icon: 'pie-chart-outline' },
-    { id: 'categories', title: 'Categories', icon: 'pricetag-outline' },
+    { id: 'reports', title: 'Reports', icon: 'flag-outline' },
+    { id: 'subscriptions', title: 'Subscriptions', icon: 'card-outline' },
     { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
-    { id: 'technical', title: 'Technical', icon: 'construct-outline' },
-    { id: 'virtual', title: 'Virtual', icon: 'videocam-outline' },
+    { id: 'crowdfunding', title: 'Crowdfunding', icon: 'cash-outline' },
     { id: 'revenue', title: 'Revenue', icon: 'bar-chart-outline' },
   ];
 
   const handleMenuPress = (itemId: string) => {
     closeMenu();
-    if (itemId === 'dashboard') {
+    if (itemId === 'home') {
       router.push('/(adminTabs)/home');
-    } else if (itemId === 'fees') {
-      router.push('/(adminTabs)/fees');
-    } else if (itemId === 'ads') {
-      router.push('/(adminTabs)/ads');
     } else if (itemId === 'subscriptions') {
       router.push('/(adminTabs)/subscriptions');
     } else if (itemId === 'users') {
       router.push('/(adminTabs)/users');
-    } else if (itemId === 'analytics') {
-      router.push('/(adminTabs)/analytics');
-    } else if (itemId === 'categories') {
-      router.push('/(adminTabs)/categories');
+    } else if (itemId === 'reports') {
+      router.push('/(adminTabs)/reports');
     } else if (itemId === 'emergency') {
       router.push('/(adminTabs)/emergency');
-    } else if (itemId === 'technical') {
-      router.push('/(adminTabs)/technical');
-    } else if (itemId === 'virtual') {
-      router.push('/(adminTabs)/virtual');
+    } else if (itemId === 'crowdfunding') {
+      router.push('/(adminTabs)/crowdfunding');
     } else if (itemId === 'revenue') {
       router.push('/(adminTabs)/revenue');
     }
@@ -167,7 +155,6 @@ export default function PremiumSubscriptionManagement() {
         ]}
       >
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Admin Panel</Text>
         </View>
         
         <View style={styles.menuContainer}>
@@ -199,20 +186,7 @@ export default function PremiumSubscriptionManagement() {
       </Animated.View>
 
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
-            <Ionicons name="menu" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Admin Panel</Text>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <ProfileDropdown iconSize={24} iconColor="#FFFFFF" />
-          </View>
-        </View>
-      </View>
+      <ProfileIcon showMenuButton={true} onMenuPress={toggleMenu} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Main Content */}
@@ -313,8 +287,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    bottom: 0,
     width: width * 0.8,
-    height: '100%',
     backgroundColor: '#FFFFFF',
     zIndex: 1001,
     shadowColor: '#000',
@@ -324,15 +298,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   sidebarHeader: {
-    backgroundColor: '#8B5CF6',
     paddingHorizontal: 20,
     paddingVertical: 20,
     paddingTop: 60,
+    backgroundColor: '#FFFFFF',
   },
   sidebarTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#111827',
   },
   menuContainer: {
     flex: 1,
@@ -341,15 +315,17 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
   },
   activeMenuItem: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EBF4FF',
     borderLeftWidth: 4,
-    borderLeftColor: '#8B5CF6',
+    borderLeftColor: '#3B82F6',
   },
   menuItemText: {
     fontSize: 16,
@@ -358,7 +334,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   activeMenuItemText: {
-    color: '#8B5CF6',
+    color: '#3B82F6',
     fontWeight: '600',
   },
   header: {

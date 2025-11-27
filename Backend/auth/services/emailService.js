@@ -1,18 +1,18 @@
 const nodemailer = require('nodemailer');
 
-// Email configuration (for development, you can use a service like Gmail, SendGrid, etc.)
+// Email configuration using environment variables
 const emailTransporter = nodemailer.createTransport({
-  service: 'gmail', // You can change this to other services
+  service: 'gmail',
   auth: {
-    user: 'voluntech4@gmail.com',
-    pass: 'yqnm uduy dsdx swsm'
+    user: process.env.EMAIL_USER || 'voluntech4@gmail.com',
+    pass: process.env.EMAIL_PASS || 'yqnm uduy dsdx swsm'
   }
 });
 
 
-// Force production mode for now - always send emails
-const isDevelopment = false; // FORCED TO PRODUCTION MODE
-console.log('🔧 EMAIL SERVICE INITIALIZED - FORCED PRODUCTION MODE');
+// Enable email sending for production use
+const isDevelopment = false; // ENABLED FOR EMAIL SENDING
+console.log('🔧 EMAIL SERVICE INITIALIZED - EMAIL SENDING ENABLED');
 console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔧 isDevelopment:', false);
 
@@ -34,6 +34,7 @@ async function sendVerificationEmail(email, verificationCode) {
   // In production, send actual email AND log to console
   try {
     console.log(`📤 Sending email to: ${email}`);
+    console.log(`📤 Using email: ${process.env.EMAIL_USER || 'voluntech4@gmail.com'}`);
     
     const mailOptions = {
       from: process.env.EMAIL_USER || 'voluntech4@gmail.com',
@@ -54,11 +55,17 @@ async function sendVerificationEmail(email, verificationCode) {
       `
     };
 
-    await emailTransporter.sendMail(mailOptions);
+    const result = await emailTransporter.sendMail(mailOptions);
     console.log(`✅ Email sent successfully to: ${email}`);
+    console.log(`✅ Message ID: ${result.messageId}`);
     return true;
   } catch (error) {
     console.error('❌ Error sending verification email:', error);
+    console.error('❌ Error details:', {
+      code: error.code,
+      command: error.command,
+      response: error.response
+    });
     console.log(`⚠️  Email failed, but verification code is logged above for testing`);
     return false;
   }

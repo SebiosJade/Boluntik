@@ -65,7 +65,38 @@ async function signup(req, res) {
   // Delete the email verification record after successful signup
   await deleteEmailVerification(email.toLowerCase());
 
-  const token = jwt.sign({ sub: user.id }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+  // Notify all admins about new user registration
+  try {
+    const User = require('../../models/User');
+    const Notification = require('../../models/Notification');
+    
+    const admins = await User.find({ role: 'admin', isActive: true });
+    
+    await Promise.all(
+      admins.map(admin => 
+        Notification.createNewUserNotification(
+          admin.id,
+          user.name,
+          user.email,
+          user.role,
+          user.id
+        )
+      )
+    );
+    
+    console.log(`📧 ${admins.length} admin(s) notified about new user: ${user.name}`);
+  } catch (notifError) {
+    console.error('Error notifying admins about new user:', notifError);
+    // Don't fail signup if notification fails
+  }
+
+  const token = jwt.sign({ 
+    sub: user.id, 
+    name: user.name, 
+    role: user.role,
+    organizationName: user.organizationName,
+    email: user.email
+  }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
   
   const responseData = { 
     user: { 

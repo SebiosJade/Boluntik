@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useState } from 'react';
 import {
-    Alert,
     Linking,
     Modal,
     ScrollView,
@@ -10,10 +9,11 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PHILIPPINES_LOCATIONS, getBarangaysForCity } from '../constants/philippinesLocations';
+import { webAlert } from '../utils/webAlert';
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -55,6 +55,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [showAllLocations, setShowAllLocations] = useState(false);
   const [detectedCity, setDetectedCity] = useState<string>('');
 
+
   // ==================== LOCATION FUNCTIONS ====================
   const getCurrentLocation = async () => {
     setIsGettingLocation(true);
@@ -63,7 +64,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       // Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
+        webAlert(
           'Permission Denied',
           'Location permission is required to get your current location.',
           [
@@ -241,22 +242,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             }
             
             updateField('location', formattedLocation);
-            Alert.alert('Success', `Location set to: ${formattedLocation}`);
+            webAlert('Success', `Location set to: ${formattedLocation}`);
           } else {
             // Only fallback to city if absolutely no barangays are available
             const fullLocation = `${city}, ${region}`;
             updateField('location', fullLocation);
-            Alert.alert('Success', `Location set to: ${fullLocation}`);
+            webAlert('Success', `Location set to: ${fullLocation}`);
           }
         } else {
-          Alert.alert('Error', 'Could not determine your location. Please enter manually.');
+          webAlert('Error', 'Could not determine your location. Please enter manually.');
         }
       } else {
-        Alert.alert('Error', 'Could not determine your location. Please enter manually.');
+        webAlert('Error', 'Could not determine your location. Please enter manually.');
       }
     } catch (error) {
       console.error('Location error:', error);
-      Alert.alert('Error', 'Failed to get your location. Please enter manually.');
+      webAlert('Error', 'Failed to get your location. Please enter manually.');
     } finally {
       setIsGettingLocation(false);
     }
@@ -265,8 +266,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const handleCancel = () => {
     // Check if there are any changes
     if (hasChanges()) {
-      // Show confirmation dialog if there are changes
-      Alert.alert(
+      // Show confirmation dialog using React Native's built-in Alert
+      webAlert(
         'Discard Changes?',
         'Are you sure you want to cancel? All unsaved changes will be lost.',
         [
@@ -286,6 +287,20 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       onClose();
     }
   };
+
+  // Handle save with validation
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      webAlert('Validation Error', 'Name is required. Please enter your name before saving.');
+    } else {
+      try {
+        await onSave();
+      } catch (error) {
+        console.error('Save failed:', error);
+      }
+    }
+  };
+
 
   // ==================== RENDER FUNCTIONS ====================
   const renderChipSelector = (
@@ -347,7 +362,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   // ==================== MAIN RENDER ====================
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -356,15 +371,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profile</Text>
           <TouchableOpacity
-            style={[styles.headerButton, isEditing && styles.disabledButton]}
-            onPress={onSave}
-            disabled={isEditing}
+            style={[styles.headerButton, (isEditing || !hasChanges()) && styles.disabledButton]}
+            onPress={handleSave}
+            disabled={isEditing || !hasChanges()}
           >
-            <Text style={[styles.saveText, isEditing && styles.disabledText]}>
+            <Text style={[styles.saveText, (isEditing || !hasChanges()) && styles.disabledText]}>
               {isEditing ? 'Saving...' : 'Save'}
             </Text>
           </TouchableOpacity>
         </View>
+
+
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Basic Information */}
@@ -574,13 +591,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
+    paddingTop: 35, // Add more top padding for better accessibility
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   headerButton: {
-    padding: 8,
+    padding: 12, // Increased padding for easier clicking
+    minHeight: 44, // Minimum touch target size
   },
   headerTitle: {
     fontSize: 18,

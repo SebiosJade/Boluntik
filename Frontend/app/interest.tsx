@@ -1,18 +1,19 @@
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../constants/Api';
 import { INTERESTS } from '../constants/Interests';
 import { useAuth } from '../contexts/AuthContext';
+import { webAlert } from '../utils/webAlert';
 
 export default function InterestScreen() {
   const router = useRouter();
   const { user, token } = useAuth();
+  const [hasLoadedInterests, setHasLoadedInterests] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasLoadedInterests, setHasLoadedInterests] = useState(false);
 
   // Use shared interests configuration
   const interests = INTERESTS;
@@ -70,7 +71,7 @@ export default function InterestScreen() {
   const handleContinue = async () => {
     // Check if user has selected at least one interest
     if (selectedInterests.length === 0) {
-      Alert.alert(
+      webAlert(
         'No Interests Selected',
         'Please select at least one interest to continue, or click Skip to proceed without selecting interests.',
         [{ text: 'OK' }]
@@ -97,7 +98,7 @@ export default function InterestScreen() {
       }
 
       // Show success message
-      Alert.alert(
+      webAlert(
         'Success!',
         'Your interests have been saved successfully.',
         [
@@ -119,7 +120,7 @@ export default function InterestScreen() {
       );
     } catch (error: any) {
       console.error('Error saving interests:', error);
-      Alert.alert('Error', error?.message || 'Failed to save interests. Please try again.');
+      webAlert('Error', error?.message || 'Failed to save interests. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +156,7 @@ export default function InterestScreen() {
       }
     } catch (error) {
       console.error('Error updating onboarding status:', error);
-      Alert.alert(
+      webAlert(
         'Navigation Error', 
         'Failed to update settings, but you can still continue.',
         [
@@ -185,7 +186,7 @@ export default function InterestScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Image
-            source={require('../assets/images/react-logo.png')}
+            source={require('../assets/images/voluntech-logo.png')}
             style={styles.logo}
             resizeMode="contain"
             accessible

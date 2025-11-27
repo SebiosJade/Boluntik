@@ -1,162 +1,245 @@
+import ProfileDropdown from '@/components/ProfileDropdown';
+import { API } from '@/constants/Api';
+import { useAuth } from '@/contexts/AuthContext';
+import * as emergencyService from '@/services/emergencyService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Image,
+    Modal,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ProfileDropdown from '@/components/ProfileDropdown';
 
 const { width } = Dimensions.get('window');
 
-interface EmergencyAlert {
-  id: string;
-  title: string;
-  severity: 'high' | 'medium' | 'low';
-  location: string;
-  time: string;
-  status: 'active' | 'resolved' | 'pending';
-  description: string;
-}
+type TabType = 'overview' | 'verification' | 'analytics';
 
-interface ResponseTeam {
-  id: string;
-  name: string;
-  members: number;
-  status: 'available' | 'deployed' | 'offline';
-  location: string;
-  responseTime: string;
-}
+const webAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
-interface EmergencyContact {
-  id: string;
-  name: string;
-  role: string;
-  phone: string;
-  email: string;
-  availability: '24/7' | 'business' | 'on-call';
-}
-
-export default function EmergencyManagement() {
+export default function AdminEmergencyManagement() {
   const router = useRouter();
+  const { token } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-width));
-  const [activeTab, setActiveTab] = useState<'alerts' | 'teams' | 'contacts'>('alerts');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const emergencyAlerts: EmergencyAlert[] = [
-    {
-      id: '1',
-      title: 'Natural Disaster - Flood Warning',
-      severity: 'high',
-      location: 'Downtown Area',
-      time: '2 hours ago',
-      status: 'active',
-      description: 'Heavy rainfall causing flooding in downtown area. Multiple roads closed.',
-    },
-    {
-      id: '2',
-      title: 'Medical Emergency - Mass Casualty',
-      severity: 'high',
-      location: 'Central Park',
-      time: '45 minutes ago',
-      status: 'active',
-      description: 'Multiple injuries reported at Central Park event. Emergency services dispatched.',
-    },
-    {
-      id: '3',
-      title: 'Fire Outbreak - Building Fire',
-      severity: 'medium',
-      location: 'Industrial District',
-      time: '1 hour ago',
-      status: 'pending',
-      description: 'Fire reported at warehouse in industrial district. Fire department responding.',
-    },
-    {
-      id: '4',
-      title: 'Power Outage - Grid Failure',
-      severity: 'medium',
-      location: 'Residential Area',
-      time: '3 hours ago',
-      status: 'resolved',
-      description: 'Power outage affecting 500+ households. Power restored.',
-    },
-  ];
+  // Data states
+  const [dashboardStats, setDashboardStats] = useState<emergencyService.DashboardStats | null>(null);
+  const [allAlerts, setAllAlerts] = useState<emergencyService.EmergencyAlert[]>([]);
+  const [featureMetrics, setFeatureMetrics] = useState<any>(null);
+  const [selectedAlert, setSelectedAlert] = useState<emergencyService.EmergencyAlert | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  const responseTeams: ResponseTeam[] = [
-    {
-      id: '1',
-      name: 'Emergency Response Team Alpha',
-      members: 12,
-      status: 'available',
-      location: 'Central Station',
-      responseTime: '5-10 min',
-    },
-    {
-      id: '2',
-      name: 'Medical Response Team Beta',
-      members: 8,
-      status: 'deployed',
-      location: 'Central Park',
-      responseTime: 'On Scene',
-    },
-    {
-      id: '3',
-      name: 'Search & Rescue Team Gamma',
-      members: 15,
-      status: 'available',
-      location: 'North Station',
-      responseTime: '10-15 min',
-    },
-    {
-      id: '4',
-      name: 'Technical Support Team Delta',
-      members: 6,
-      status: 'offline',
-      location: 'Main Office',
-      responseTime: 'Unavailable',
-    },
-  ];
+  useEffect(() => {
+    let mounted = true;
+    
+    const fetchData = async () => {
+      if (token && mounted) {
+        await loadData();
+      }
+    };
+    
+    fetchData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [token, activeTab]);
 
-  const emergencyContacts: EmergencyContact[] = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      role: 'Emergency Coordinator',
-      phone: '+1 (555) 123-4567',
-      email: 'sarah.johnson@emergency.gov',
-      availability: '24/7',
-    },
-    {
-      id: '2',
-      name: 'Michael Chen',
-      role: 'Fire Chief',
-      phone: '+1 (555) 234-5678',
-      email: 'michael.chen@fire.gov',
-      availability: '24/7',
-    },
-    {
-      id: '3',
-      name: 'Dr. Emily Rodriguez',
-      role: 'Medical Director',
-      phone: '+1 (555) 345-6789',
-      email: 'emily.rodriguez@medical.gov',
-      availability: 'on-call',
-    },
-    {
-      id: '4',
-      name: 'James Wilson',
-      role: 'Police Chief',
-      phone: '+1 (555) 456-7890',
-      email: 'james.wilson@police.gov',
-      availability: '24/7',
-    },
-    {
-      id: '5',
-      name: 'Lisa Thompson',
-      role: 'Public Relations',
-      phone: '+1 (555) 567-8901',
-      email: 'lisa.thompson@pr.gov',
-      availability: 'business',
-    },
-  ];
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      if (activeTab === 'overview') {
+        await loadDashboardStats();
+      } else if (activeTab === 'verification') {
+        await loadAllAlerts();
+      } else if (activeTab === 'analytics') {
+        await loadFeatureMetrics();
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadDashboardStats = async () => {
+    if (!token) return;
+    try {
+      const stats = await emergencyService.getDashboardStats(token);
+      setDashboardStats(stats);
+    } catch (error: any) {
+      console.error('Error loading dashboard stats:', error);
+      // Set null to prevent infinite loop
+      setDashboardStats(null);
+    }
+  };
+
+  const loadAllAlerts = async () => {
+    if (!token) return;
+    try {
+      // Only fetch unverified alerts for the verification tab
+      const data = await emergencyService.getAllAlerts(token, { 
+        verified: false, 
+        limit: 100, 
+        page: 1 
+      });
+      setAllAlerts(data.alerts);
+    } catch (error: any) {
+      console.error('Error loading alerts:', error);
+      // Set empty array to prevent infinite loop
+      setAllAlerts([]);
+    }
+  };
+
+  const loadFeatureMetrics = async () => {
+    if (!token) return;
+    try {
+      const metrics = await emergencyService.getFeatureAdoptionMetrics(token);
+      setFeatureMetrics(metrics);
+    } catch (error: any) {
+      console.error('Error loading metrics:', error);
+      // Set null to prevent infinite loop
+      setFeatureMetrics(null);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadData();
+    setIsRefreshing(false);
+  };
+
+  const handleVerifyAlert = async (alertId: string) => {
+    if (!token) return;
+    
+    const confirmMessage = 'This will activate the alert and broadcast it to all volunteers via email and in-app notifications. Continue?';
+    
+    // Platform-specific confirmation
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Verify Alert\n\n${confirmMessage}`);
+      if (!confirmed) return;
+    } else {
+      Alert.alert(
+        'Verify Alert',
+        confirmMessage,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Verify & Broadcast',
+            onPress: async () => {
+              await performVerification(alertId);
+              return;
+            }
+          }
+        ]
+      );
+      return; // Exit here for native, onPress handles the rest
+    }
+    
+    // For web, continue directly
+    await performVerification(alertId);
+  };
+
+  const performVerification = async (alertId: string) => {
+    if (!token) return;
+    
+    // Show loading state
+    setIsLoading(true);
+    
+    try {
+      console.log('Verifying alert:', alertId);
+      
+      // Show progress message for web
+      if (Platform.OS === 'web') {
+        // Create a loading overlay
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'verification-loading';
+        loadingDiv.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        `;
+        loadingDiv.innerHTML = `
+          <div style="background: white; padding: 30px; border-radius: 16px; text-align: center; max-width: 400px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">📧</div>
+            <h2 style="margin: 0 0 10px 0; color: #111827;">Verifying & Broadcasting...</h2>
+            <p style="margin: 0; color: #6B7280;">Sending notifications to all volunteers. This may take a moment.</p>
+            <div style="margin-top: 20px;">
+              <div style="width: 100%; height: 4px; background: #E5E7EB; border-radius: 2px; overflow: hidden;">
+                <div style="height: 100%; background: #DC2626; animation: progress 2s ease-in-out infinite;"></div>
+              </div>
+            </div>
+          </div>
+          <style>
+            @keyframes progress {
+              0% { width: 0%; }
+              50% { width: 70%; }
+              100% { width: 100%; }
+            }
+          </style>
+        `;
+        document.body.appendChild(loadingDiv);
+      }
+      
+      const result = await emergencyService.verifyAlert(alertId, token);
+      console.log('Verify result:', result);
+      
+      // Remove loading overlay for web
+      if (Platform.OS === 'web') {
+        const loadingDiv = document.getElementById('verification-loading');
+        if (loadingDiv) loadingDiv.remove();
+      }
+      
+      webAlert(
+        'Alert Verified!', 
+        `Alert has been verified and broadcasted to all volunteers. ${result.alert?.notificationsSent || 0} notifications sent.`
+      );
+      
+      // Reload both alerts and dashboard stats
+      loadAllAlerts();
+      loadDashboardStats();
+    } catch (error: any) {
+      console.error('Error verifying alert:', error);
+      
+      // Remove loading overlay for web
+      if (Platform.OS === 'web') {
+        const loadingDiv = document.getElementById('verification-loading');
+        if (loadingDiv) loadingDiv.remove();
+      }
+      
+      webAlert('Error', error.message || 'Failed to verify alert');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const toggleMenu = () => {
     if (isMenuOpen) {
@@ -184,107 +267,423 @@ export default function EmergencyManagement() {
   };
 
   const menuItems = [
-    { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline' },
-    { id: 'fees', title: 'Fees', icon: 'card-outline' },
-    { id: 'ads', title: 'Ads', icon: 'checkmark-circle-outline' },
-    { id: 'subscriptions', title: 'Subscriptions', icon: 'card-outline' },
+    { id: 'home', title: 'Dashboard', icon: 'home-outline' },
     { id: 'users', title: 'Users', icon: 'people-outline' },
-    { id: 'analytics', title: 'Analytics', icon: 'pie-chart-outline' },
-    { id: 'categories', title: 'Categories', icon: 'pricetag-outline' },
+    { id: 'reports', title: 'Reports', icon: 'flag-outline' },
+    { id: 'subscriptions', title: 'Subscriptions', icon: 'card-outline' },
     { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
-    { id: 'technical', title: 'Technical', icon: 'construct-outline' },
-    { id: 'virtual', title: 'Virtual', icon: 'videocam-outline' },
+    { id: 'crowdfunding', title: 'Crowdfunding', icon: 'cash-outline' },
     { id: 'revenue', title: 'Revenue', icon: 'bar-chart-outline' },
   ];
 
   const handleMenuPress = (itemId: string) => {
     closeMenu();
-    if (itemId === 'dashboard') router.push('/(adminTabs)/home');
-    else if (itemId === 'fees') router.push('/(adminTabs)/fees');
-    else if (itemId === 'ads') router.push('/(adminTabs)/ads');
-    else if (itemId === 'subscriptions') router.push('/(adminTabs)/subscriptions');
+    if (itemId === 'home') router.push('/(adminTabs)/home');
     else if (itemId === 'users') router.push('/(adminTabs)/users');
-    else if (itemId === 'analytics') router.push('/(adminTabs)/analytics');
-    else if (itemId === 'categories') router.push('/(adminTabs)/categories');
-    else if (itemId === 'emergency') {/* already here */}
-    else if (itemId === 'technical') router.push('/(adminTabs)/technical');
-    else if (itemId === 'virtual') router.push('/(adminTabs)/virtual');
+    else if (itemId === 'reports') router.push('/(adminTabs)/reports');
+    else if (itemId === 'subscriptions') router.push('/(adminTabs)/subscriptions');
+    else if (itemId === 'emergency') { /* already here */ }
+    else if (itemId === 'crowdfunding') router.push('/(adminTabs)/crowdfunding');
     else if (itemId === 'revenue') router.push('/(adminTabs)/revenue');
   };
 
-  const handleTabChange = (tab: 'alerts' | 'teams' | 'contacts') => {
-    setActiveTab(tab);
-  };
-
-  const handleCreateAlert = () => {
-    console.log('Creating new emergency alert');
-    // Handle creating new alert
-  };
-
-  const handleDeployTeam = (teamId: string) => {
-    console.log(`Deploying team ${teamId}`);
-    // Handle deploying team
-  };
-
-  const handleContactCall = (contactId: string) => {
-    console.log(`Calling contact ${contactId}`);
-    // Handle calling contact
-  };
-
-  const handleContactEmail = (contactId: string) => {
-    console.log(`Emailing contact ${contactId}`);
-    // Handle emailing contact
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return '#EF4444';
-      case 'medium':
-        return '#F59E0B';
-      case 'low':
-        return '#10B981';
-      default:
-        return '#6B7280';
+  const renderOverview = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#8B5CF6" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      );
     }
+
+    if (!dashboardStats) {
+      return null;
+    }
+
+    return (
+      <View>
+        {/* KPI Cards */}
+        <View style={styles.kpiGrid}>
+          <View style={[styles.kpiCard, { backgroundColor: '#FEE2E2' }]}>
+            <Ionicons name="warning" size={32} color="#DC2626" />
+            <Text style={styles.kpiValue}>{dashboardStats.activeAlerts}</Text>
+            <Text style={styles.kpiLabel}>Active Alerts</Text>
+          </View>
+
+          <View style={[styles.kpiCard, { backgroundColor: '#D1FAE5' }]}>
+            <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+            <Text style={styles.kpiValue}>{dashboardStats.resolvedAlerts}</Text>
+            <Text style={styles.kpiLabel}>Resolved</Text>
+          </View>
+
+          <View style={[styles.kpiCard, { backgroundColor: '#DBEAFE' }]}>
+            <Ionicons name="people" size={32} color="#3B82F6" />
+            <Text style={styles.kpiValue}>{dashboardStats.totalVolunteers}</Text>
+            <Text style={styles.kpiLabel}>Volunteers</Text>
+          </View>
+
+          <View style={[styles.kpiCard, { backgroundColor: '#FEF3C7' }]}>
+            <Ionicons name="flash" size={32} color="#F59E0B" />
+            <Text style={styles.kpiValue}>{dashboardStats.totalResponses}</Text>
+            <Text style={styles.kpiLabel}>Responses</Text>
+          </View>
+        </View>
+
+        {/* Performance Metrics */}
+        <View style={styles.metricsCard}>
+          <Text style={styles.metricsTitle}>System Performance</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Average Response Time:</Text>
+            <Text style={styles.metricValue}>{dashboardStats.averageResponseTime.toFixed(1)} min</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Volunteer Join Rate:</Text>
+            <Text style={styles.metricValue}>{dashboardStats.joinRate.toFixed(1)}%</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Critical Alerts:</Text>
+            <Text style={[styles.metricValue, { color: '#DC2626' }]}>{dashboardStats.criticalAlerts}</Text>
+          </View>
+        </View>
+
+        {/* Recent Alerts */}
+        <View style={styles.recentAlertsSection}>
+          <Text style={styles.sectionTitle}>Recent Emergency Alerts</Text>
+          {dashboardStats.recentAlerts && dashboardStats.recentAlerts.length > 0 ? (
+            dashboardStats.recentAlerts.slice(0, 5).map((alert) => (
+            <View key={alert._id} style={styles.miniAlertCard}>
+              <View style={styles.miniAlertHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.miniAlertTitle}>{alert.title}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                    <View style={[styles.statusBadge, getStatusBadgeStyle(alert.status)]}>
+                      <Text style={styles.statusBadgeText}>{alert.status}</Text>
+                    </View>
+                    <View style={[styles.typeBadge, { backgroundColor: getEmergencyTypeColor(alert.emergencyType) }]}>
+                      <Text style={styles.typeBadgeText}>{alert.emergencyType}</Text>
+                    </View>
+                    <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(alert.urgencyLevel) }]}>
+                      <Text style={styles.urgencyBadgeText}>{alert.urgencyLevel}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.miniAlertInfo}>
+                <View style={styles.detailRow}>
+                  <Ionicons name="business" size={14} color="#6B7280" />
+                  <Text style={styles.miniAlertOrg}>{alert.organizationName}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="calendar" size={14} color="#6B7280" />
+                  <Text style={styles.miniAlertDate}>
+                    {new Date(alert.broadcastedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="location" size={14} color="#6B7280" />
+                  <Text style={styles.miniAlertLocation} numberOfLines={1}>
+                    {alert.location?.address || 'Location not specified'}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="people" size={14} color="#6B7280" />
+                  <Text style={styles.miniAlertStats}>
+                    {alert.responses?.length || 0} volunteers joined
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.viewRecentAlertButton}
+                onPress={() => {
+                  setSelectedAlert(alert);
+                  setShowDetailModal(true);
+                }}
+              >
+                <Ionicons name="eye" size={16} color="#3B82F6" />
+                <Text style={styles.viewRecentAlertButtonText}>View Details</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No recent alerts to display</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Top Volunteers */}
+        {dashboardStats.topVolunteers.length > 0 && (
+          <View style={styles.topVolunteersSection}>
+            <Text style={styles.sectionTitle}>Top Responding Volunteers</Text>
+            {dashboardStats.topVolunteers.slice(0, 5).map((volunteer, index) => (
+              <View key={volunteer.volunteerId} style={styles.volunteerItem}>
+                <View style={styles.volunteerRank}>
+                  <Text style={styles.rankText}>#{index + 1}</Text>
+                </View>
+                <View style={styles.volunteerDetails}>
+                  <Text style={styles.volunteerName}>{volunteer.volunteerName}</Text>
+                  <Text style={styles.volunteerStats}>
+                    {volunteer.responsesCount} responses • {volunteer.completedCount} completed
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
   };
 
-  const getStatusColor = (status: string) => {
+  const renderVerification = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#8B5CF6" />
+          <Text style={styles.loadingText}>Loading alerts...</Text>
+        </View>
+      );
+    }
+
+    const unverifiedAlerts = allAlerts.filter(a => !a.verifiedByAdmin);
+
+    if (unverifiedAlerts.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="shield-checkmark" size={64} color="#10B981" />
+          <Text style={styles.emptyTitle}>All Alerts Verified</Text>
+          <Text style={styles.emptyText}>
+            There are no unverified emergency alerts at this time.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        {unverifiedAlerts.map((alert) => (
+          <View key={alert._id} style={styles.verificationCard}>
+        <View style={styles.verificationHeader}>
+          <View style={styles.verificationTitleRow}>
+            <Text style={styles.verificationTitle}>{alert.title}</Text>
+            <View style={[styles.verificationUrgencyBadge, { backgroundColor: getUrgencyColor(alert.urgencyLevel) }]}>
+              <Text style={styles.verificationUrgencyText}>{alert.urgencyLevel.toUpperCase()}</Text>
+            </View>
+          </View>
+          <Text style={styles.verificationOrg}>by {alert.organizationName}</Text>
+        </View>
+
+        <Text style={styles.verificationDescription} numberOfLines={2}>
+          {alert.description}
+        </Text>
+
+        {alert.image && (
+          <Image 
+            source={{ uri: `${API.BASE_URL}${alert.image}` }} 
+            style={styles.verificationImage}
+            resizeMode="cover"
+          />
+        )}
+
+        <View style={styles.verificationDetails}>
+          <View style={styles.detailRow}>
+            <Ionicons name="location" size={14} color="#6B7280" />
+            <Text style={styles.verificationDetailText}>{alert.location.address}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="calendar" size={14} color="#6B7280" />
+            <Text style={styles.verificationDetailText}>
+              {new Date(alert.broadcastedAt).toLocaleString()}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="people" size={14} color="#6B7280" />
+            <Text style={styles.verificationDetailText}>{alert.responses.length} volunteers joined</Text>
+          </View>
+        </View>
+
+        <View style={styles.verificationActions}>
+          <TouchableOpacity
+            style={styles.viewButton}
+            onPress={() => {
+              setSelectedAlert(alert);
+              setShowDetailModal(true);
+            }}
+          >
+            <Ionicons name="eye" size={16} color="#3B82F6" />
+            <Text style={styles.viewButtonText}>View Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.verifyButton}
+            onPress={() => handleVerifyAlert(alert.alertId)}
+          >
+            <Ionicons name="shield-checkmark" size={16} color="#FFFFFF" />
+            <Text style={styles.verifyButtonText}>Verify Alert</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+        ))}
+      </>
+    );
+  };
+
+  const renderAnalytics = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#8B5CF6" />
+          <Text style={styles.loadingText}>Loading analytics...</Text>
+        </View>
+      );
+    }
+
+    if (!featureMetrics) {
+      return null;
+    }
+
+    const metrics = featureMetrics.metrics;
+
+    return (
+      <View>
+        {/* Alert Broadcast Rate */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsCardTitle}>📊 Alert Broadcast Rate</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Total Alerts:</Text>
+            <Text style={styles.metricValue}>{metrics.alertBroadcastRate.total}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Per Day Average:</Text>
+            <Text style={styles.metricValue}>{metrics.alertBroadcastRate.perDay.toFixed(1)}</Text>
+          </View>
+          
+          <Text style={styles.breakdownTitle}>By Emergency Type:</Text>
+          {Object.entries(metrics.alertBroadcastRate.byType).map(([type, count]: any) => (
+            <View key={type} style={styles.breakdownRow}>
+              <Text style={styles.breakdownLabel}>{type}:</Text>
+              <Text style={styles.breakdownValue}>{count}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Volunteer Join Rate */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsCardTitle}>👥 Volunteer Join Rate</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Notifications Sent:</Text>
+            <Text style={styles.metricValue}>{metrics.volunteerJoinRate.totalNotifications}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Total Joins:</Text>
+            <Text style={styles.metricValue}>{metrics.volunteerJoinRate.totalJoins}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Join Rate:</Text>
+            <Text style={[styles.metricValue, { color: '#10B981', fontSize: 20 }]}>
+              {metrics.volunteerJoinRate.percentage.toFixed(1)}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Average Response Time */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsCardTitle}>⏱️ Average Response Time</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Overall Average:</Text>
+            <Text style={[styles.metricValue, { color: '#3B82F6' }]}>
+              {metrics.averageResponseTime.overall.toFixed(1)} min
+            </Text>
+          </View>
+        </View>
+
+        {/* Retention Rate */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsCardTitle}>🔄 Retention Rate</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>First-Time Volunteers:</Text>
+            <Text style={styles.metricValue}>{metrics.retentionRate.firstTime}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Returning Volunteers:</Text>
+            <Text style={styles.metricValue}>{metrics.retentionRate.returning}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Retention Rate:</Text>
+            <Text style={[styles.metricValue, { color: '#8B5CF6', fontSize: 20 }]}>
+              {metrics.retentionRate.percentage.toFixed(1)}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Deployment Metrics */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsCardTitle}>🚀 Deployment Metrics</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Total Deployments:</Text>
+            <Text style={styles.metricValue}>{metrics.deploymentMetrics.total}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Completed:</Text>
+            <Text style={styles.metricValue}>{metrics.deploymentMetrics.completed}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Completion Rate:</Text>
+            <Text style={[styles.metricValue, { color: '#10B981', fontSize: 20 }]}>
+              {metrics.deploymentMetrics.completionRate.toFixed(1)}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Engagement Metrics */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsCardTitle}>📈 Engagement Metrics</Text>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Total Volunteers:</Text>
+            <Text style={styles.metricValue}>{metrics.engagement.totalVolunteers}</Text>
+          </View>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Avg. Volunteers per Alert:</Text>
+            <Text style={styles.metricValue}>
+              {metrics.engagement.averageVolunteersPerAlert.toFixed(1)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const getStatusBadgeStyle = (status: string) => {
     switch (status) {
-      case 'active':
-        return '#EF4444';
-      case 'pending':
-        return '#F59E0B';
-      case 'resolved':
-        return '#10B981';
-      default:
-        return '#6B7280';
+      case 'active': return { backgroundColor: '#DC2626' };
+      case 'resolved': return { backgroundColor: '#10B981' };
+      case 'cancelled': return { backgroundColor: '#6B7280' };
+      default: return { backgroundColor: '#6B7280' };
     }
   };
 
-  const getTeamStatusColor = (status: string) => {
-    switch (status) {
-      case 'available':
-        return '#10B981';
-      case 'deployed':
-        return '#F59E0B';
-      case 'offline':
-        return '#6B7280';
-      default:
-        return '#6B7280';
-    }
+  const getEmergencyTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      fire: '#DC2626',
+      earthquake: '#7C2D12',
+      flood: '#1E40AF',
+      typhoon: '#581C87',
+      hurricane: '#6B21A8',
+      tsunami: '#0C4A6E',
+      landslide: '#78350F',
+      medical: '#BE123C',
+      other: '#4B5563',
+    };
+    return colors[type] || '#6B7280';
   };
 
-  const getAvailabilityColor = (availability: string) => {
-    switch (availability) {
-      case '24/7':
-        return '#EF4444';
-      case 'business':
-        return '#F59E0B';
-      case 'on-call':
-        return '#3B82F6';
-      default:
-        return '#6B7280';
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'critical': return '#7F1D1D';
+      case 'high': return '#DC2626';
+      case 'medium': return '#F59E0B';
+      case 'low': return '#10B981';
+      default: return '#6B7280';
     }
   };
 
@@ -309,7 +708,6 @@ export default function EmergencyManagement() {
         ]}
       >
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Admin Panel</Text>
         </View>
 
         <View style={styles.menuContainer}>
@@ -341,211 +739,115 @@ export default function EmergencyManagement() {
       </Animated.View>
 
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
-            <Ionicons name="menu" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Admin Panel</Text>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <ProfileDropdown iconSize={24} iconColor="#FFFFFF" />
-          </View>
-        </View>
-      </View>
+      <ProfileDropdown showMenuButton={true} onMenuPress={toggleMenu} />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#8B5CF6']} />
+        }
+      >
         <View style={styles.content}>
-          {/* Emergency Management Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Emergency Management</Text>
-
             {/* Tabs */}
             <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'alerts' && styles.activeTab]}
-                onPress={() => handleTabChange('alerts')}
+              style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
+              onPress={() => setActiveTab('overview')}
               >
-                <Text style={[styles.tabText, activeTab === 'alerts' && styles.activeTabText]}>
-                  Emergency Alerts
+              <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+                Overview
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
-                onPress={() => handleTabChange('teams')}
+              style={[styles.tab, activeTab === 'verification' && styles.activeTab]}
+              onPress={() => setActiveTab('verification')}
               >
-                <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>
-                  Response Teams
+              <Text style={[styles.tabText, activeTab === 'verification' && styles.activeTabText]}>
+                Verification
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'contacts' && styles.activeTab]}
-                onPress={() => handleTabChange('contacts')}
+              style={[styles.tab, activeTab === 'analytics' && styles.activeTab]}
+              onPress={() => setActiveTab('analytics')}
               >
-                <Text style={[styles.tabText, activeTab === 'contacts' && styles.activeTabText]}>
-                  Emergency Contacts
+              <Text style={[styles.tabText, activeTab === 'analytics' && styles.activeTabText]}>
+                Analytics
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Content based on active tab */}
-            {activeTab === 'alerts' && (
+          {activeTab === 'overview' && (
               <View style={styles.tabContent}>
-                <View style={styles.contentHeader}>
-                  <Text style={styles.contentTitle}>Active Emergency Alerts</Text>
-                  <TouchableOpacity style={styles.createButton} onPress={handleCreateAlert}>
-                    <Ionicons name="add" size={16} color="#FFFFFF" />
-                    <Text style={styles.createButtonText}>Create Alert</Text>
-                  </TouchableOpacity>
+              {renderOverview()}
                 </View>
-
-                <View style={styles.alertList}>
-                  {emergencyAlerts.map((alert) => (
-                    <View key={alert.id} style={styles.alertCard}>
-                      <View style={styles.alertHeader}>
-                        <View style={styles.alertInfo}>
-                          <Text style={styles.alertTitle}>{alert.title}</Text>
-                          <Text style={styles.alertLocation}>{alert.location}</Text>
-                        </View>
-                        <View style={styles.alertBadges}>
-                          <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(alert.severity) }]}>
-                            <Text style={styles.badgeText}>{alert.severity.toUpperCase()}</Text>
-                          </View>
-                          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(alert.status) }]}>
-                            <Text style={styles.badgeText}>{alert.status.toUpperCase()}</Text>
-                          </View>
-                        </View>
-                      </View>
-                      <Text style={styles.alertDescription}>{alert.description}</Text>
-                      <View style={styles.alertFooter}>
-                        <Text style={styles.alertTime}>{alert.time}</Text>
-                        <View style={styles.alertActions}>
-                          <TouchableOpacity style={styles.actionButton}>
-                            <Ionicons name="eye" size={16} color="#3B82F6" />
-                            <Text style={styles.actionButtonText}>View Details</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={styles.actionButton}>
-                            <Ionicons name="call" size={16} color="#10B981" />
-                            <Text style={styles.actionButtonText}>Dispatch</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
+          )}
+          {activeTab === 'verification' && (
+            <View style={styles.tabContent}>
+              {renderVerification()}
               </View>
             )}
-
-            {activeTab === 'teams' && (
+          {activeTab === 'analytics' && (
               <View style={styles.tabContent}>
-                <View style={styles.contentHeader}>
-                  <Text style={styles.contentTitle}>Response Teams</Text>
-                  <TouchableOpacity style={styles.createButton}>
-                    <Ionicons name="add" size={16} color="#FFFFFF" />
-                    <Text style={styles.createButtonText}>Add Team</Text>
-                  </TouchableOpacity>
+              {renderAnalytics()}
                 </View>
+          )}
+                        </View>
+      </ScrollView>
 
-                <View style={styles.teamList}>
-                  {responseTeams.map((team) => (
-                    <View key={team.id} style={styles.teamCard}>
-                      <View style={styles.teamHeader}>
-                        <View style={styles.teamInfo}>
-                          <Text style={styles.teamName}>{team.name}</Text>
-                          <Text style={styles.teamLocation}>{team.location}</Text>
-                        </View>
-                        <View style={[styles.teamStatusBadge, { backgroundColor: getTeamStatusColor(team.status) }]}>
-                          <Text style={styles.badgeText}>{team.status.toUpperCase()}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.teamDetails}>
-                        <View style={styles.teamDetail}>
-                          <Ionicons name="people" size={16} color="#6B7280" />
-                          <Text style={styles.teamDetailText}>{team.members} members</Text>
-                        </View>
-                        <View style={styles.teamDetail}>
-                          <Ionicons name="time" size={16} color="#6B7280" />
-                          <Text style={styles.teamDetailText}>Response: {team.responseTime}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.teamActions}>
-                        <TouchableOpacity 
-                          style={[styles.deployButton, team.status === 'offline' && styles.disabledButton]}
-                          onPress={() => handleDeployTeam(team.id)}
-                          disabled={team.status === 'offline'}
-                        >
-                          <Ionicons name="send" size={16} color="#FFFFFF" />
-                          <Text style={styles.deployButtonText}>Deploy</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.viewButton}>
-                          <Ionicons name="eye" size={16} color="#3B82F6" />
-                          <Text style={styles.viewButtonText}>View Team</Text>
+      {/* Alert Detail Modal */}
+      <Modal
+        visible={showDetailModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Alert Details</Text>
+              <TouchableOpacity onPress={() => setShowDetailModal(false)}>
+                <Ionicons name="close" size={24} color="#111827" />
                         </TouchableOpacity>
                       </View>
+
+            {selectedAlert && (
+              <ScrollView style={styles.modalBody}>
+                <Text style={styles.modalAlertTitle}>{selectedAlert.title}</Text>
+                <Text style={styles.modalDescription}>{selectedAlert.description}</Text>
+
+                <View style={styles.modalDetailSection}>
+                  <Text style={styles.modalDetailLabel}>Organization:</Text>
+                  <Text style={styles.modalDetailValue}>{selectedAlert.organizationName}</Text>
                     </View>
-                  ))}
-                </View>
-              </View>
-            )}
 
-            {activeTab === 'contacts' && (
-              <View style={styles.tabContent}>
-                <View style={styles.contentHeader}>
-                  <Text style={styles.contentTitle}>Emergency Contacts</Text>
-                  <TouchableOpacity style={styles.createButton}>
-                    <Ionicons name="add" size={16} color="#FFFFFF" />
-                    <Text style={styles.createButtonText}>Add Contact</Text>
-                  </TouchableOpacity>
+                <View style={styles.modalDetailSection}>
+                  <Text style={styles.modalDetailLabel}>Location:</Text>
+                  <Text style={styles.modalDetailValue}>{selectedAlert.location?.address || 'Not specified'}</Text>
                 </View>
 
-                <View style={styles.contactList}>
-                  {emergencyContacts.map((contact) => (
-                    <View key={contact.id} style={styles.contactCard}>
-                      <View style={styles.contactHeader}>
-                        <View style={styles.contactInfo}>
-                          <Text style={styles.contactName}>{contact.name}</Text>
-                          <Text style={styles.contactRole}>{contact.role}</Text>
-                        </View>
-                        <View style={[styles.availabilityBadge, { backgroundColor: getAvailabilityColor(contact.availability) }]}>
-                          <Text style={styles.badgeText}>{contact.availability}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.contactDetails}>
-                        <View style={styles.contactDetail}>
-                          <Ionicons name="call" size={16} color="#6B7280" />
-                          <Text style={styles.contactDetailText}>{contact.phone}</Text>
-                        </View>
-                        <View style={styles.contactDetail}>
-                          <Ionicons name="mail" size={16} color="#6B7280" />
-                          <Text style={styles.contactDetailText}>{contact.email}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.contactActions}>
-                        <TouchableOpacity 
-                          style={styles.callButton}
-                          onPress={() => handleContactCall(contact.id)}
-                        >
-                          <Ionicons name="call" size={16} color="#FFFFFF" />
-                          <Text style={styles.callButtonText}>Call</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.emailButton}
-                          onPress={() => handleContactEmail(contact.id)}
-                        >
-                          <Ionicons name="mail" size={16} color="#3B82F6" />
-                          <Text style={styles.emailButtonText}>Email</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
-                </View>
+                <View style={styles.modalDetailSection}>
+                  <Text style={styles.modalDetailLabel}>Volunteers Joined:</Text>
+                  <Text style={styles.modalDetailValue}>{selectedAlert.responses?.length || 0}</Text>
               </View>
+
+                <View style={styles.modalDetailSection}>
+                  <Text style={styles.modalDetailLabel}>Notifications Sent:</Text>
+                  <Text style={styles.modalDetailValue}>{selectedAlert.notificationsSent}</Text>
+                </View>
+
+                <View style={styles.modalDetailSection}>
+                  <Text style={styles.modalDetailLabel}>Status:</Text>
+                  <View style={[styles.statusBadge, getStatusBadgeStyle(selectedAlert.status)]}>
+                    <Text style={styles.statusBadgeText}>{selectedAlert.status.toUpperCase()}</Text>
+                        </View>
+                        </View>
+              </ScrollView>
             )}
           </View>
         </View>
-      </ScrollView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -568,8 +870,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    bottom: 0,
     width: width * 0.8,
-    height: '100%',
     backgroundColor: '#FFFFFF',
     zIndex: 1001,
     shadowColor: '#000',
@@ -579,15 +881,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   sidebarHeader: {
-    backgroundColor: '#8B5CF6',
     paddingHorizontal: 20,
     paddingVertical: 20,
     paddingTop: 60,
+    backgroundColor: '#FFFFFF',
   },
   sidebarTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#111827',
   },
   menuContainer: {
     flex: 1,
@@ -596,15 +898,17 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
   },
   activeMenuItem: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EBF4FF',
     borderLeftWidth: 4,
-    borderLeftColor: '#8B5CF6',
+    borderLeftColor: '#3B82F6',
   },
   menuItemText: {
     fontSize: 16,
@@ -613,7 +917,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   activeMenuItemText: {
-    color: '#8B5CF6',
+    color: '#3B82F6',
     fontWeight: '600',
   },
   header: {
@@ -651,33 +955,21 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
-  section: {
+  tabContainer: {
+    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 4,
-    marginBottom: 20,
-  },
   tab: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 6,
     alignItems: 'center',
@@ -697,271 +989,458 @@ const styles = StyleSheet.create({
   tabContent: {
     gap: 16,
   },
-  contentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  
+  // Loading & Empty
+  loadingContainer: {
+    paddingVertical: 60,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  contentTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  createButton: {
-    backgroundColor: '#8B5CF6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-  },
-  createButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  alertList: {
-    gap: 12,
-  },
-  alertCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#EF4444',
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  alertInfo: {
-    flex: 1,
-  },
-  alertTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  alertLocation: {
+  loadingText: {
+    marginTop: 12,
     fontSize: 14,
     color: '#6B7280',
   },
-  alertBadges: {
-    flexDirection: 'row',
-    gap: 8,
+  emptyContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  severityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+  
+  // KPI Cards
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  kpiCard: {
+    width: (width - 56) / 2,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  kpiValue: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 8,
+  },
+  kpiLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  
+  // Metrics Card
+  metricsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  metricsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  metricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  metricValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  
+  // Recent Alerts
+  recentAlertsSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  miniAlertCard: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  miniAlertHeader: {
+    marginBottom: 12,
+  },
+  miniAlertTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
-  badgeText: {
+  statusBadgeText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
-  alertDescription: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  alertFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  alertTime: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  alertActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-  teamList: {
-    gap: 12,
-  },
-  teamCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 16,
-  },
-  teamHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  teamInfo: {
-    flex: 1,
-  },
-  teamName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  teamLocation: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  teamStatusBadge: {
+  typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
-  teamDetails: {
-    flexDirection: 'row',
-    gap: 16,
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
+  },
+  urgencyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  urgencyBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  miniAlertInfo: {
+    gap: 8,
     marginBottom: 12,
   },
-  teamDetail: {
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  teamDetailText: {
+  miniAlertOrg: {
+    fontSize: 13,
+    color: '#6B7280',
+    flex: 1,
+  },
+  miniAlertDate: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  miniAlertLocation: {
+    fontSize: 13,
+    color: '#6B7280',
+    flex: 1,
+  },
+  miniAlertStats: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  viewRecentAlertButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    gap: 6,
+  },
+  viewRecentAlertButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  
+  // Top Volunteers
+  topVolunteersSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  volunteerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    marginBottom: 8,
+  },
+  volunteerRank: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#8B5CF6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  rankText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  volunteerDetails: {
+    flex: 1,
+  },
+  volunteerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  volunteerStats: {
     fontSize: 12,
     color: '#6B7280',
   },
-  teamActions: {
+  
+  // Verification Card
+  verificationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  verificationHeader: {
+    marginBottom: 12,
+  },
+  verificationTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  verificationTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    flex: 1,
+  },
+  verificationUrgencyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  verificationUrgencyText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  verificationOrg: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  verificationDescription: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 12,
+  },
+  verificationImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginVertical: 12,
+  },
+  verificationDetails: {
+    gap: 6,
+    marginBottom: 12,
+  },
+  verificationDetailText: {
+    fontSize: 12,
+    color: '#6B7280',
+    flex: 1,
+  },
+  verificationActions: {
     flexDirection: 'row',
     gap: 8,
-  },
-  deployButton: {
-    backgroundColor: '#10B981',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#9CA3AF',
-  },
-  deployButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   viewButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-    flex: 1,
     justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    gap: 4,
   },
   viewButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#3B82F6',
   },
-  contactList: {
-    gap: 12,
-  },
-  contactCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 16,
-  },
-  contactHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  contactInfo: {
+  verifyButton: {
     flex: 1,
-  },
-  contactName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  contactRole: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  availabilityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  contactDetails: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  contactDetail: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  contactDetailText: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  contactActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  callButton: {
-    backgroundColor: '#10B981',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-    flex: 1,
     justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    gap: 4,
   },
-  callButtonText: {
-    fontSize: 12,
+  verifyButtonText: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  emailButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-    flex: 1,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#3B82F6',
+  
+  // Analytics
+  analyticsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  emailButtonText: {
+  analyticsCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  breakdownTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    textTransform: 'capitalize',
+  },
+  breakdownValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalAlertTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  modalDetailSection: {
+    marginBottom: 12,
+  },
+  modalDetailLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  modalDetailValue: {
+    fontSize: 14,
+    color: '#111827',
   },
 });

@@ -6,17 +6,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import { Event, eventService } from '../../services/eventService';
+import { eventService } from '../../services/eventService';
+import { Event } from '../../types';
 
 const { width } = Dimensions.get('window');
-const sidebarWidth = width * 0.8;
 export default function CalendarScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-sidebarWidth)).current;
+  const slideAnim = useRef(new Animated.Value(-width * 0.7)).current;
   const [joinedEvents, setJoinedEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -228,7 +228,7 @@ export default function CalendarScreen() {
   };
 
   const toggleMenu = () => {
-    const toValue = isMenuOpen ? -sidebarWidth : 0;
+    const toValue = isMenuOpen ? -width * 0.7 : 0;
     Animated.timing(slideAnim, {
       toValue,
       duration: 300,
@@ -239,7 +239,7 @@ export default function CalendarScreen() {
 
   const closeMenu = () => {
     Animated.timing(slideAnim, {
-      toValue: -sidebarWidth,
+      toValue: -width * 0.7,
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -247,12 +247,13 @@ export default function CalendarScreen() {
   };
 
   const menuItems = [
-    { id: 'home', title: 'Home', icon: 'home' as any },
-    { id: 'explore', title: 'Explore', icon: 'search' as any },
-    { id: 'calendar', title: 'Calendar', icon: 'calendar' as any },
-    { id: 'emergency', title: 'Emergency', icon: 'warning' as any },
-    { id: 'virtualhub', title: 'Virtual Hub', icon: 'laptop' as any },
-    { id: 'crowdfunding', title: 'Crowdfunding', icon: 'heart' as any },
+    { id: 'home', title: 'Home', icon: 'home-outline' },
+    { id: 'explore', title: 'Explore', icon: 'search-outline' },
+    { id: 'calendar', title: 'Calendar', icon: 'calendar-outline' },
+    { id: 'emergency', title: 'Emergency', icon: 'warning-outline' },
+    { id: 'virtualhub', title: 'Virtual Hub', icon: 'laptop-outline' },
+    { id: 'crowdfunding', title: 'Crowdfunding', icon: 'heart-outline' },
+    { id: 'resources', title: 'Resources', icon: 'cube-outline' },
   ];
 
   const handleMenuPress = (itemId: string) => {
@@ -269,6 +270,8 @@ export default function CalendarScreen() {
       router.push('/(volunteerTabs)/virtualhub');
     } else if (itemId === 'crowdfunding') {
       router.push('/(volunteerTabs)/crowdfunding');
+    } else if (itemId === 'resources') {
+      router.push('/(volunteerTabs)/resources');
     }
   };
 
@@ -441,34 +444,34 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <ProfileIcon showMenuButton={true} onMenuPress={toggleMenu} />
-      
+      {isMenuOpen && <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeMenu} />}
+
       {/* Sidebar */}
       <Animated.View style={[styles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Volunteer Hub</Text>
+          <Text style={styles.sidebarTitle}>Volunteer</Text>
           <TouchableOpacity onPress={closeMenu}>
-            <Ionicons name="close" size={24} color="white" />
+            <Ionicons name="close" size={24} color="#111827" />
           </TouchableOpacity>
         </View>
-        <ScrollView style={styles.sidebarContent}>
+        
+        <View style={styles.menuContainer}>
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={[styles.menuItem, item.id === 'calendar' && styles.activeMenuItem]}
               onPress={() => handleMenuPress(item.id)}
             >
-              <Ionicons name={item.icon} size={20} color="white" />
-              <Text style={styles.menuText}>{item.title}</Text>
+              <Ionicons name={item.icon as any} size={24} color={item.id === 'calendar' ? '#3B82F6' : '#374151'} />
+              <Text style={[styles.menuItemText, item.id === 'calendar' && styles.activeMenuItemText]}>
+                {item.title}
+              </Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       </Animated.View>
 
-      {/* Overlay */}
-      {isMenuOpen && (
-        <TouchableOpacity style={styles.overlay} onPress={closeMenu} />
-      )}
+      <ProfileIcon showMenuButton={true} onMenuPress={toggleMenu} />
    
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headingWrap}>
@@ -584,17 +587,6 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.quickActionButton} activeOpacity={0.85}>
-            <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.quickActionText}>Add Event</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionButton} activeOpacity={0.85}>
-            <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.quickActionText}>Import Calendar</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Filter Section */}
@@ -1074,27 +1066,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#3B82F6',
   },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  quickActionButton: {
-    flex: 1,
-    backgroundColor: '#2563EB',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  quickActionText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1218,42 +1189,53 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: sidebarWidth,
-    height: '100%',
-    backgroundColor: '#3B82F6',
-    zIndex: 9,
-    paddingTop: 80,
-    paddingHorizontal: 20,
+    bottom: 0,
+    width: width * 0.7,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   sidebarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    paddingTop: 40,
   },
   sidebarTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#111827',
   },
-  sidebarContent: {
-    flex: 1,
+  menuContainer: {
+    gap: 12,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 12,
   },
   activeMenuItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#E0E7FF',
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
   },
-  menuText: {
-    marginLeft: 12,
+  menuItemText: {
     fontSize: 16,
-    color: 'white',
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#374151',
+  },
+  activeMenuItemText: {
+    color: '#3B82F6',
+    fontWeight: '700',
   },
   overlay: {
     position: 'absolute',
@@ -1262,7 +1244,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 8,
+    zIndex: 1,
   },
   loadingContainer: {
     flex: 1,

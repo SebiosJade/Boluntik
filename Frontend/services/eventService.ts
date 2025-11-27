@@ -1,80 +1,38 @@
 import { API } from '@/constants/Api';
-
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  endTime: string;
-  location: string;
-  maxParticipants: string;
-  actualParticipants?: string; // Optional field for actual volunteers who joined
-  eventType: string;
-  difficulty: string;
-  cause: string;
-  skills: string;
-  ageRestriction: string;
-  equipment: string;
-  org: string;
-  organizationId: string;
-  organizationName: string;
-  createdBy: string;
-  createdByName: string;
-  createdByEmail: string;
-  createdByRole: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateEventData {
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  endTime: string;
-  location: string;
-  maxParticipants: string;
-  eventType: string;
-  difficulty: string;
-  cause: string;
-  skills: string;
-  ageRestriction: string;
-  equipment: string;
-  org: string;
-  organizationId: string;
-  organizationName: string;
-  createdBy: string;
-  createdByName: string;
-  createdByEmail: string;
-  createdByRole: string;
-  status?: string;
-}
+import { CreateEventData, Event } from '../types';
+import { apiService } from './apiService';
 
 class EventService {
-  private   async makeRequest(url: string, options: RequestInit = {}) {
-    try {
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly CACHE_DURATION = 30000; // 30 seconds cache
+
+  // Use centralized API service with rate limiting and retry logic
+  private async makeRequest(url: string, options: RequestInit = {}) {
+    // Check cache for GET requests
+    if (!options.method || options.method === 'GET') {
+      const cacheKey = `${url}_${JSON.stringify(options.headers || {})}`;
+      const cached = this.cache.get(cacheKey);
       
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
-
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        return cached.data;
       }
+    }
 
-      const data = await response.json();
-      return data;
+    try {
+      const response = await apiService.request(url, options);
+      
+      // Cache GET requests
+      if (!options.method || options.method === 'GET') {
+        const cacheKey = `${url}_${JSON.stringify(options.headers || {})}`;
+        this.cache.set(cacheKey, {
+          data: response.data,
+          timestamp: Date.now()
+        });
+      }
+      
+      return response.data;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('Event service request failed:', error);
       throw error;
     }
   }

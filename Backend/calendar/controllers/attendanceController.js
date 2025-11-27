@@ -53,6 +53,7 @@ async function getEventAttendance(req, res) {
     const participants = await findEventParticipantsByEvent(eventId);
     
     const attendanceData = participants.map(participant => ({
+      id: participant.id,
       userId: participant.userId,
       userName: participant.userName,
       userEmail: participant.userEmail,
@@ -62,17 +63,19 @@ async function getEventAttendance(req, res) {
       attendanceMarkedBy: participant.attendanceMarkedBy,
       registrationDate: participant.registrationDate,
       checkInTime: participant.checkInTime,
-      checkOutTime: participant.checkOutTime
+      checkOutTime: participant.checkOutTime,
+      notes: participant.notes,
+      isActive: participant.isActive
     }));
 
     res.json({
       success: true,
+      participants: attendanceData,
       attendance: attendanceData,
       summary: {
         total: participants.length,
-        present: participants.filter(p => p.attendanceStatus === 'present').length,
-        absent: participants.filter(p => p.attendanceStatus === 'absent').length,
-        late: participants.filter(p => p.attendanceStatus === 'late').length,
+        attended: participants.filter(p => p.attendanceStatus === 'attended').length,
+        not_attended: participants.filter(p => p.attendanceStatus === 'not_attended').length,
         pending: participants.filter(p => !p.attendanceStatus || p.attendanceStatus === 'pending').length
       }
     });

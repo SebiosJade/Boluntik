@@ -1,16 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Event } from '../services/eventService';
-
-interface EventCardProps {
-  event: Event;
-  onUnjoin?: () => void;
-  onShowDetails?: () => void;
-  onJoin?: () => void;
-  showJoinButton?: boolean;
-  showUnjoinButton?: boolean;
-}
+import { EventCardProps } from '../types';
 
 const EventCard = memo<EventCardProps>(({ 
   event, 

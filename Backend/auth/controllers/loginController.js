@@ -26,26 +26,41 @@ async function login(req, res) {
   const needsOnboarding = !user.hasCompletedOnboarding;
   const needsDefaultAvatar = !user.avatar;
   
-  if (needsOnboarding || needsDefaultAvatar) {
-    const updateData = {};
-    if (needsOnboarding) {
-      updateData.hasCompletedOnboarding = true;
-    }
-    if (needsDefaultAvatar) {
-      updateData.avatar = '/uploads/avatars/default-avatar.png';
-    }
-    await updateUser(user.id, updateData);
+  // Always update login tracking
+  const updateData = {
+    lastLoginAt: new Date(),
+    loginCount: (user.loginCount || 0) + 1
+  };
+  
+  if (needsOnboarding) {
+    updateData.hasCompletedOnboarding = true;
   }
+  if (needsDefaultAvatar) {
+    updateData.avatar = '/uploads/avatars/default-avatar.png';
+  }
+  
+  await updateUser(user.id, updateData);
 
-  const token = jwt.sign({ sub: user.id }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+  const token = jwt.sign({ 
+    sub: user.id, 
+    name: user.name, 
+    role: user.role,
+    organizationName: user.organizationName,
+    email: user.email
+  }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+  
+  // Get updated user data after login tracking update
+  const updatedUser = await findUserById(user.id);
   
   const responseData = { 
     user: { 
-      id: user.id, 
-      name: user.name, 
-      email: user.email, 
-      role: user.role, 
-      avatar: user.avatar || '/uploads/avatars/default-avatar.png' 
+      id: updatedUser.id, 
+      name: updatedUser.name, 
+      email: updatedUser.email, 
+      role: updatedUser.role, 
+      avatar: updatedUser.avatar || '/uploads/avatars/default-avatar.png',
+      lastLoginAt: updatedUser.lastLoginAt,
+      loginCount: updatedUser.loginCount
     }, 
     token, 
     needsOnboarding 
@@ -62,7 +77,17 @@ async function getMe(req, res) {
     const payload = jwt.verify(token, config.jwt.secret);
     const user = await findUserById(payload.sub);
     if (!user) return res.status(401).json({ message: 'Invalid token' });
-    res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.avatar || '/uploads/avatars/default-avatar.png' } });
+    res.json({ 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        avatar: user.avatar || '/uploads/avatars/default-avatar.png',
+        lastLoginAt: user.lastLoginAt,
+        loginCount: user.loginCount || 0
+      } 
+    });
   } catch (e) {
     res.status(401).json({ message: 'Invalid token' });
   }

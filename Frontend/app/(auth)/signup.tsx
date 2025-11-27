@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../constants/Api';
+import { webAlert } from '../../utils/webAlert';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function SignUpScreen() {
   // Send verification code
   const sendVerificationCode = async () => {
     if (!email.trim()) {
-      Alert.alert('Email Required', 'Please enter your email address');
+      webAlert('Email Required', 'Please enter your email address');
       return;
     }
     
@@ -54,9 +55,9 @@ export default function SignUpScreen() {
         });
       }, 1000);
       
-      Alert.alert('Code Sent', 'Verification code sent to your email');
+      webAlert('Code Sent', 'Verification code sent to your email');
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to send verification code');
+      webAlert('Error', e?.message || 'Failed to send verification code');
     } finally {
       setSendingCode(false);
     }
@@ -65,7 +66,7 @@ export default function SignUpScreen() {
   // Verify email code
   const verifyEmailCode = async () => {
     if (!verificationCode.trim()) {
-      Alert.alert('Code Required', 'Please enter the verification code');
+      webAlert('Code Required', 'Please enter the verification code');
       return;
     }
     
@@ -82,9 +83,9 @@ export default function SignUpScreen() {
       }
       
       setEmailVerified(true);
-      Alert.alert('Email Verified', 'Your email has been verified successfully!');
+        webAlert('Email Verified', 'Your email has been verified successfully!');
     } catch (e: any) {
-      Alert.alert('Verification Failed', e?.message || 'Invalid verification code');
+      webAlert('Verification Failed', e?.message || 'Invalid verification code');
     } finally {
       setVerifyingCode(false);
     }
@@ -92,19 +93,19 @@ export default function SignUpScreen() {
 
   const onSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Missing info', 'Please fill all fields');
+      webAlert('Missing info', 'Please fill all fields');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Password too short', 'Password must be at least 6 characters long');
+      webAlert('Password too short', 'Password must be at least 6 characters long');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Passwords do not match', 'Please re-enter your password');
+      webAlert('Passwords do not match', 'Please re-enter your password');
       return;
     }
     if (!emailVerified) {
-      Alert.alert('Email Not Verified', 'Please verify your email first');
+      webAlert('Email Not Verified', 'Please verify your email first');
       return;
     }
     
@@ -149,7 +150,7 @@ export default function SignUpScreen() {
       
       console.log('Signup successful!');
       // Show sweet success alert, then redirect to login
-      Alert.alert(
+      webAlert(
         '🎉 Welcome to VolunTech!',
         `Your ${role} account has been created successfully. `,
         [
@@ -162,7 +163,7 @@ export default function SignUpScreen() {
       );
     } catch (e: any) {
       console.log('Signup error:', e?.message);
-      Alert.alert('Signup Failed', e?.message || 'Please try again');
+      webAlert('Signup Failed', e?.message || 'Please try again');
     } finally {
       setSubmitting(false);
     }
@@ -178,11 +179,11 @@ export default function SignUpScreen() {
         <View style={styles.container}>
         <View style={styles.header}>
           <Image
-            source={require('../../assets/images/react-logo.png')}
+            source={require('../../assets/images/voluntech-logo.png')}
             style={styles.logo}
             resizeMode="contain"
             accessible
-            accessibilityLabel="App logo"
+            accessibilityLabel="VOLUNTECH logo"
           />
           <Text style={styles.brand}>VOLUNTECH</Text>
         </View>
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   header: { alignItems: 'center', marginTop: 10, marginBottom: 16 },
-  logo: { width: 60, height: 60, marginBottom: 8 },
+  logo: { width: 100, height: 100, marginBottom: 8 },
   brand: { fontSize: 18, letterSpacing: 2, color: '#2F4F4F', fontWeight: '700' },
   card: {
     backgroundColor: '#E0F0FF',

@@ -1,4 +1,6 @@
 const { findEventParticipantsByEvent, updateEventParticipant, findUserById, findEventParticipantsByUser } = require('../../database/dataAccess');
+const { findEventById } = require('../../database/dataAccess');
+const Notification = require('../../models/Notification');
 const logger = require('../../utils/logger');
 
 // Get all volunteers for a specific event
@@ -24,7 +26,8 @@ async function getEventVolunteers(req, res) {
             email: user.email,
             avatar: user.avatar,
             skills: user.skills,
-            bio: user.bio
+            bio: user.bio,
+            certificates: user.certificates || []
           } : null
         };
       })
@@ -177,6 +180,24 @@ async function giveVolunteerFeedback(req, res) {
       return res.status(404).json({ message: 'Volunteer not found for this event' });
     }
 
+    // Send notification to volunteer about feedback
+    try {
+      const event = await findEventById(eventId);
+      const organizationName = event?.organizationName || 'the organization';
+      
+      await Notification.createFeedbackNotification(
+        userId,
+        parseInt(rating),
+        event?.title || 'the event',
+        organizationName,
+        eventId
+      );
+      logger.info(`📧 Feedback notification sent to user ${userId}`);
+    } catch (notifError) {
+      logger.error('Error sending feedback notification:', notifError);
+      // Don't fail feedback if notification fails
+    }
+
     res.json({
       success: true,
       message: 'Feedback given successfully',
@@ -239,6 +260,21 @@ async function awardBadge(req, res) {
 
     if (!participant) {
       return res.status(404).json({ message: 'Volunteer not found for this event' });
+    }
+
+    // Send notification to volunteer about badge
+    try {
+      const event = await findEventById(eventId);
+      await Notification.createBadgeNotification(
+        userId,
+        badgeName,
+        description || '',
+        event?.title || 'the event'
+      );
+      logger.info(`📧 Badge notification sent to user ${userId}`);
+    } catch (notifError) {
+      logger.error('Error sending badge notification:', notifError);
+      // Don't fail badge award if notification fails
     }
 
     res.json({

@@ -2,14 +2,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { webAlert } from '../utils/webAlert';
+import NotificationBadge from './NotificationBadge';
 
 interface ProfileIconProps {
     showMenuButton?: boolean;
     onMenuPress?: () => void;
+    backgroundColor?: string;
 }
 
-const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) => {
+const ProfileIcon = ({ showMenuButton = false, onMenuPress, backgroundColor = '#FFFFFF' }: ProfileIconProps) => {
     const router = useRouter();
     const [showDropdown, setShowDropdown] = useState(false);
     const { logout } = useAuth();
@@ -26,7 +29,7 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
     const handleLogout = () => {
         setShowDropdown(false);
         
-        Alert.alert(
+        webAlert(
             'Logout Confirmation',
             'Are you sure you want to logout? You will need to sign in again to access your account.',
             [
@@ -41,45 +44,39 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
                         logout();
                     },
                 },
-            ]
+            ],
+            'warning'
         );
     };
     return (
-        <View style={styles.headerBar}>
+        <View style={[styles.headerBar, { backgroundColor }]}>
             <View style={styles.headerLeft}>
                 {showMenuButton && (
                     <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
-                        <Ionicons name="menu" size={24} color="#1E40AF" />
+                        <Ionicons name="menu" size={24} color={backgroundColor === '#8B5CF6' ? '#FFFFFF' : '#1E40AF'} />
                     </TouchableOpacity>
                 )}
                 <Image
-                    source={require('../assets/images/react-logo.png')}
+                    source={require('../assets/images/voluntech-logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                     accessible
                     accessibilityLabel="VOLUNTECH logo"
                 />
-                <Text style={styles.brand}>VOLUNTECH</Text>
+                <Text style={[styles.brand, { color: backgroundColor === '#8B5CF6' ? '#FFFFFF' : '#0F172A' }]}>VOLUNTECH</Text>
             </View>
             <View style={styles.profileContainer}>
-                <TouchableOpacity
+                <NotificationBadge 
+                    iconSize={32} 
+                    iconColor={backgroundColor === '#8B5CF6' ? '#FFFFFF' : '#111827'}
                     style={styles.notificationIcon}
-                    accessibilityRole="button"
-                    accessibilityLabel="View notifications"
-                    onPress={
-                        () => {
-                            router.push('/notification')
-                        }
-                    }
-                >
-                    <Ionicons name="notifications-outline" size={32} color="#111827" />
-                </TouchableOpacity>
+                />
                 <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel="View profile options"
                     onPress={handleProfilePress}
                 >
-                    <Ionicons name="person-circle" size={32} color="#111827" />
+                    <Ionicons name="person-circle" size={32} color={backgroundColor === '#8B5CF6' ? '#FFFFFF' : '#111827'} />
                 </TouchableOpacity>
 
                 {showDropdown && (
@@ -87,6 +84,7 @@ const ProfileIcon = ({ showMenuButton = false, onMenuPress }: ProfileIconProps) 
                         visible={showDropdown}
                         transparent={true}
                         animationType="fade"
+                        presentationStyle="pageSheet"
                         onRequestClose={() => setShowDropdown(false)}
                     >
                         <TouchableOpacity 
@@ -134,7 +132,7 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 8,
   },
-  logo: { width: 28, height: 28 },
+  logo: { width: 40, height: 40 },
   brand: { fontSize: 12, letterSpacing: 1, color: '#0F172A', fontWeight: '700' },
   profileContainer: {
     position: 'relative',

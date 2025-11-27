@@ -1,21 +1,16 @@
 import { API } from '../constants/Api';
+import { apiService } from './apiService';
 
 class AttendanceService {
+  // Use centralized API service with rate limiting and retry logic
   private async makeRequest(url: string, options: RequestInit = {}) {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`HTTP error! status: ${response.status}, message: ${JSON.stringify(errorData)}`);
+    try {
+      const response = await apiService.request(url, options);
+      return response.data;
+    } catch (error) {
+      console.error('Attendance service request failed:', error);
+      throw error;
     }
-
-    return response.json();
   }
 
   // Get attendance data for an event

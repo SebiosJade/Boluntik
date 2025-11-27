@@ -63,6 +63,150 @@ const userSchema = new mongoose.Schema({
     type: String,
     maxlength: 30
   }],
+  badges: [{
+    id: {
+      type: String,
+      required: true
+    },
+    type: {
+      type: String,
+      enum: ['excellence', 'impact', 'responsive', 'professional', 'inspiring', 'friendly'],
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    icon: {
+      type: String,
+      required: true
+    },
+    eventId: {
+      type: String,
+      required: true
+    },
+    eventTitle: {
+      type: String,
+      required: true
+    },
+    awardedBy: {
+      type: String,
+      required: true
+    },
+    awardedByName: {
+      type: String,
+      required: true
+    },
+    awardedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  certificates: [{
+    id: {
+      type: String,
+      required: true
+    },
+    eventId: {
+      type: String,
+      required: true
+    },
+    eventTitle: {
+      type: String,
+      required: true
+    },
+    eventDate: {
+      type: String,
+      required: true
+    },
+    eventTime: {
+      type: String,
+      default: 'TBD'
+    },
+    eventLocation: {
+      type: String,
+      default: 'TBD'
+    },
+    eventDescription: {
+      type: String,
+      default: ''
+    },
+    eventCategory: {
+      type: String,
+      default: 'General'
+    },
+    eventType: {
+      type: String,
+      default: 'volunteer'
+    },
+    volunteerId: {
+      type: String,
+      required: true
+    },
+    volunteerName: {
+      type: String,
+      required: true
+    },
+    volunteerEmail: {
+      type: String,
+      required: true
+    },
+    organizationId: {
+      type: String,
+      required: true
+    },
+    organizationName: {
+      type: String,
+      required: true
+    },
+    message: {
+      type: String,
+      default: ''
+    },
+    awardedAt: {
+      type: Date,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['awarded', 'revoked'],
+      default: 'awarded'
+    },
+    // Event-specific certificate properties
+    certificateType: {
+      type: String,
+      required: true
+    },
+    certificateStyle: {
+      type: String,
+      required: true
+    },
+    certificateColor: {
+      type: String,
+      required: true
+    },
+    certificateIcon: {
+      type: String,
+      required: true
+    },
+    certificateTitle: {
+      type: String,
+      required: true
+    },
+    certificateSubtitle: {
+      type: String,
+      required: true
+    },
+    certificateFooter: {
+      type: String,
+      required: true
+    },
+    uniqueIdentifier: {
+      type: String,
+      required: true,
+      unique: true
+    }
+  }],
   hasCompletedOnboarding: {
     type: Boolean,
     default: false
@@ -74,12 +218,43 @@ const userSchema = new mongoose.Schema({
   emailVerifiedAt: {
     type: Date
   },
+  accountStatus: {
+    type: String,
+    enum: ['active', 'suspended', 'deleted'],
+    default: 'active'
+  },
+  suspensionReason: {
+    type: String,
+    default: ''
+  },
+  suspendedAt: {
+    type: Date
+  },
+  suspendedBy: {
+    adminId: String,
+    adminName: String
+  },
   isActive: {
     type: Boolean,
     default: true
   },
+  lastPasswordReset: {
+    type: Date
+  },
+  temporaryPassword: {
+    type: String,
+    default: null
+  },
+  mustResetPassword: {
+    type: Boolean,
+    default: false
+  },
   lastLoginAt: {
     type: Date
+  },
+  loginCount: {
+    type: Number,
+    default: 0
   },
   createdAt: {
     type: Date,
@@ -88,7 +263,19 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  modificationHistory: [{
+    modifiedBy: {
+      adminId: String,
+      adminName: String
+    },
+    fieldsChanged: [String],
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    reason: String
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

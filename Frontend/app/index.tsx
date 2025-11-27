@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,11 +7,11 @@ export default function IndexScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Image
-          source={require('../assets/images/react-logo.png')}
+          source={require('../assets/images/voluntech-logo.png')}
           style={styles.logo}
           resizeMode="contain"
           accessible
-          accessibilityLabel="App logo"
+          accessibilityLabel="VOLUNTECH logo"
         />
 
         <Text style={styles.brand}>VOLUNTECH</Text>

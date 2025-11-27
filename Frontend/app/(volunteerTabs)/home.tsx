@@ -5,8 +5,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import EnhancedVolunteerBadges from '../../components/EnhancedVolunteerBadges';
 import { useAuth } from '../../contexts/AuthContext';
-import { Event, eventService } from '../../services/eventService';
+import { eventService } from '../../services/eventService';
+import { Event } from '../../types';
 
 const { width } = Dimensions.get('window');
 const sidebarWidth = width * 0.8;
@@ -264,6 +266,7 @@ export default function HomeDashboardScreen() {
     { id: 'emergency', title: 'Emergency', icon: 'warning' as any },
     { id: 'virtualhub', title: 'Virtual Hub', icon: 'laptop' as any },
     { id: 'crowdfunding', title: 'Crowdfunding', icon: 'heart' as any },
+    { id: 'resources', title: 'Resources', icon: 'cube' as any },
   ];
 
   const handleMenuPress = (itemId: string) => {
@@ -280,6 +283,8 @@ export default function HomeDashboardScreen() {
       router.push('/(volunteerTabs)/virtualhub');
     } else if (itemId === 'crowdfunding') {
       router.push('/(volunteerTabs)/crowdfunding');
+    } else if (itemId === 'resources') {
+      router.push('/(volunteerTabs)/resources');
     }
   };
 
@@ -291,9 +296,9 @@ export default function HomeDashboardScreen() {
       {/* Sidebar */}
       <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarSlideAnim }] }]}>
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Volunteer Hub</Text>
+          <Text style={styles.sidebarTitle}>Volunteer</Text>
           <TouchableOpacity onPress={closeMenu}>
-            <Ionicons name="close" size={24} color="white" />
+            <Ionicons name="close" size={24} color="#374151" />
           </TouchableOpacity>
         </View>
         <ScrollView style={styles.sidebarContent}>
@@ -303,8 +308,8 @@ export default function HomeDashboardScreen() {
               style={[styles.menuItem, item.id === 'home' && styles.activeMenuItem]}
               onPress={() => handleMenuPress(item.id)}
             >
-              <Ionicons name={item.icon} size={20} color="white" />
-              <Text style={styles.menuText}>{item.title}</Text>
+              <Ionicons name={item.icon} size={24} color={item.id === 'home' ? '#3B82F6' : '#374151'} />
+              <Text style={[styles.menuText, item.id === 'home' && styles.activeMenuText]}>{item.title}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -521,69 +526,16 @@ function BadgesSection({
   totalHours: number; 
   uniqueOrganizations: number; 
 }) {
-  // Calculate badge achievements based on real data
-  const hasFirstTimer = completedEvents.length >= 1;
-  const hasHelpingHand = totalHours >= 10;
-  const hasCommunityHero = uniqueOrganizations >= 5;
-
-  const badges = [
-    {
-      id: 'first-timer',
-      icon: <Ionicons name="sparkles-outline" size={18} color={hasFirstTimer ? "#F59E0B" : "#9CA3AF"} />,
-      title: "First Timer",
-      subtitle: hasFirstTimer ? "Completed your first volunteer event" : "Complete your first event",
-      earned: hasFirstTimer
-    },
-    {
-      id: 'helping-hand',
-      icon: <MaterialCommunityIcons name="heart" size={18} color={hasHelpingHand ? "#F59E0B" : "#9CA3AF"} />,
-      title: "Helping Hand",
-      subtitle: hasHelpingHand ? `Volunteered for ${totalHours}+ hours` : "Volunteer for 10+ hours",
-      earned: hasHelpingHand
-    },
-    {
-      id: 'community-hero',
-      icon: <MaterialCommunityIcons name="account-star" size={18} color={hasCommunityHero ? "#F59E0B" : "#9CA3AF"} />,
-      title: "Community Hero",
-      subtitle: hasCommunityHero ? `Supported ${uniqueOrganizations}+ organizations` : "Support 5+ organizations",
-      earned: hasCommunityHero
-    }
-  ];
-
   return (
-    <SectionCard title="Your Badges" actionText="View All" onPressAction={() => { }}>
-      <View style={styles.badgeRow}>
-        {badges.map((badge) => (
-          <BadgeItem 
-            key={badge.id}
-            icon={badge.icon} 
-            title={badge.title} 
-            subtitle={badge.subtitle}
-            earned={badge.earned}
-          />
-        ))}
-      </View>
-    </SectionCard>
-  );
-}
-
-function BadgeItem({ 
-  icon, 
-  title, 
-  subtitle, 
-  earned 
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
-  subtitle: string; 
-  earned: boolean; 
-}) {
-  return (
-    <View style={styles.badgeItem}>
-      <View style={[styles.badgeIcon, !earned && styles.badgeIconLocked]}>{icon}</View>
-      <Text style={[styles.badgeTitle, !earned && styles.badgeTitleLocked]}>{title}</Text>
-      <Text style={[styles.badgeSubtitle, !earned && styles.badgeSubtitleLocked]}>{subtitle}</Text>
-    </View>
+    <EnhancedVolunteerBadges
+      completedEvents={completedEvents}
+      totalHours={totalHours}
+      uniqueOrganizations={uniqueOrganizations}
+      onViewAll={() => {
+        // Navigate to profile badges section
+        console.log('Navigate to profile badges');
+      }}
+    />
   );
 }
 
@@ -732,12 +684,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    bottom: 0,
     width: sidebarWidth,
-    height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     zIndex: 9,
     paddingTop: 80, // Adjust based on header height
     paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   sidebarHeader: {
     flexDirection: 'row',
@@ -748,7 +705,7 @@ const styles = StyleSheet.create({
   sidebarTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#111827',
   },
   sidebarContent: {
     flex: 1,
@@ -757,17 +714,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     marginBottom: 8,
   },
   activeMenuItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderWidth: 1,
+    borderColor: '#93C5FD',
   },
   menuText: {
     marginLeft: 12,
     fontSize: 16,
-    color: 'white',
+    color: '#374151',
     fontWeight: '600',
+  },
+  activeMenuText: {
+    color: '#1D4ED8',
   },
   overlay: {
     position: 'absolute',
